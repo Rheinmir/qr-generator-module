@@ -385,9 +385,15 @@ const App: React.FC = () => {
                                     <option key={bank.id} value={bank.bin}>
                                         {bank.shortName} - {bank.name}
                                     </option>
-                                ))}
+                                ))
+                                }
                             </select>
                          </div>
+                         {(vietQrData.bankId && !vietQrData.accountNo) && (
+                            <div className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                                <span>⚠️ Vui lòng nhập <b>Số tài khoản</b> để hiển thị QR Code.</span>
+                            </div>
+                         )}
                          <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Số tài khoản" value={vietQrData.accountNo} onChange={e => setVietQrData({...vietQrData, accountNo: e.target.value})} />
                          <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" type="number" placeholder="Số tiền (Tùy chọn)" value={vietQrData.amount} onChange={e => setVietQrData({...vietQrData, amount: e.target.value})} />
                          <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Nội dung chuyển khoản (Tùy chọn)" value={vietQrData.content} onChange={e => setVietQrData({...vietQrData, content: e.target.value})} />
