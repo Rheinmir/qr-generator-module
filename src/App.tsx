@@ -109,25 +109,30 @@ const App: React.FC = () => {
         {/* Input Section */}
         <div className="lg:col-span-3 space-y-6 relative">
           
-          {/* Sidebar Generator Mode Switcher */}
-          <div className="absolute -left-16 top-0 hidden xl:flex flex-col gap-2 group">
-             <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-black transition-colors cursor-pointer relative overflow-hidden">
-                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity" />
-                <span className="text-xs font-bold">MODE</span>
+          {/* Refined Sidebar Mode Switcher */}
+          <div className="absolute -left-14 top-0 z-10 hidden xl:flex flex-col gap-2 group">
+             <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-sm shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-black group-hover:bg-white transition-all cursor-pointer overflow-hidden">
+                <span className="text-[10px] font-bold tracking-tighter">M</span>
              </div>
              
-             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 -translate-x-2 group-hover:translate-x-0 duration-300">
+             <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-2 -translate-x-4 group-hover:translate-x-0 ease-out origin-left transform scale-95 group-hover:scale-100">
                <button 
-                 onClick={() => setGeneratorMode('qr')}
-                 className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${generatorMode === 'qr' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200 hover:border-black'}`}
-                 title="QR Code"
+                 onClick={() => {
+                   setGeneratorMode('qr');
+                   setManualMode('structured'); // Reset to structured when going back to QR usually
+                 }}
+                 className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border text-[10px] font-medium transition-all ${generatorMode === 'qr' ? 'bg-black text-white border-black scale-110' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                 title="QR Code Mode"
                >
                  QR
                </button>
                <button 
-                 onClick={() => setGeneratorMode('barcode')}
-                 className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${generatorMode === 'barcode' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200 hover:border-black'}`}
-                 title="Barcode"
+                 onClick={() => {
+                   setGeneratorMode('barcode');
+                   setManualMode('plaintext'); // Force plain text for barcode
+                 }}
+                 className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border text-[10px] font-medium transition-all ${generatorMode === 'barcode' ? 'bg-black text-white border-black scale-110' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                 title="Barcode Mode"
                >
                  Bar
                </button>
@@ -156,12 +161,15 @@ const App: React.FC = () => {
               
               {/* Sub-mode Switcher */}
               <div className="flex items-center gap-4 border-b border-gray-100 pb-2 mb-2">
-                 <button 
-                   onClick={() => setManualMode('structured')}
-                   className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'structured' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                 >
-                   Cấu trúc (Key-Value)
-                 </button>
+                 {/* Only show 'Structured' option if NOT in Barcode mode */}
+                 {generatorMode !== 'barcode' && (
+                   <button 
+                     onClick={() => setManualMode('structured')}
+                     className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'structured' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                   >
+                     Cấu trúc (Key-Value)
+                   </button>
+                 )}
                  <button 
                    onClick={() => setManualMode('plaintext')}
                    className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'plaintext' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
@@ -194,12 +202,21 @@ const App: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <textarea
-                  value={plainText}
-                  onChange={(e) => setPlainText(e.target.value)}
-                  placeholder="Nhập nội dung văn bản tại đây..."
-                  className="w-full h-[300px] p-4 rounded-xl border border-gray-200 focus:border-black focus:ring-0 resize-none text-sm font-mono text-gray-700 bg-gray-50/50"
-                />
+                <div className="relative">
+                  {generatorMode === 'barcode' && (
+                     <div className={`text-[10px] mb-2 px-2 py-1 rounded border ${plainText.length > 20 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                       {plainText.length > 20 
+                         ? `⚠️ Barcode dài (${plainText.length} ký tự) có thể khó quét. Khuyên dùng < 20 ký tự.`
+                         : "ℹ️ Barcode chỉ hỗ trợ chữ cái không dấu và số."}
+                     </div>
+                  )}
+                  <textarea
+                    value={plainText}
+                    onChange={(e) => setPlainText(e.target.value)}
+                    placeholder={generatorMode === 'barcode' ? "Nhập mã barcode (VD: SP00123)..." : "Nhập nội dung văn bản tại đây..."}
+                    className="w-full h-[300px] p-4 rounded-xl border border-gray-200 focus:border-black focus:ring-0 resize-none text-sm font-mono text-gray-700 bg-gray-50/50"
+                  />
+                </div>
               )}
             </div>
           )}
