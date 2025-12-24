@@ -94,3 +94,19 @@ export const processBatchFile = async (
     onProgress({ total: 0, current: 0, status: 'error', errorMessage: error instanceof Error ? error.message : "Lỗi không xác định" });
   }
 };
+
+export const downloadTemplate = () => {
+  const ws = XLSX.utils.json_to_sheet([
+    { 'ID': '001', 'Họ và Tên': 'Nguyen Van A', 'Phòng Ban': 'Kỹ Thuật', 'Chức Vụ': 'Nhân viên' },
+    { 'ID': '002', 'Họ và Tên': 'Tran Thi B', 'Phòng Ban': 'Kế Toán', 'Chức Vụ': 'Trưởng phòng' },
+    { 'ID': '003', 'Họ và Tên': 'Le Van C', 'Phòng Ban': 'Nhân Sự', 'Chức Vụ': 'Thực tập sinh' },
+  ]);
+  
+  // Set column widths
+  ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Template");
+  
+  XLSX.writeFile(wb, "QR_Batch_Template.xlsx");
+};

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FileSpreadsheet } from 'lucide-react';
 import { Layout } from './components/Layout';
 import { FieldInput } from './components/FieldInput';
 import { QRDisplay } from './components/QRDisplay';
@@ -146,6 +146,27 @@ const App: React.FC = () => {
                isProcessing={isProcessing}
                progress={progress}
              />
+             
+             {/* Batch Actions & Guide */}
+             <div className="flex flex-col gap-3 pt-2">
+                <button 
+                  onClick={() => import('./utils/batchProcessor').then(m => m.downloadTemplate())}
+                  className="flex items-center justify-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-2 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Tải file Excel mẫu
+                </button>
+                
+                <div className="bg-gray-50 rounded-lg p-4 text-xs text-[#86868b] space-y-2 border border-gray-100">
+                  <p className="font-semibold text-gray-900 mb-1">Hướng dẫn sử dụng:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-1">
+                    <li>Dòng 1 của file Excel là <strong>Tên trường</strong> (VD: Tên, ID).</li>
+                    <li>Các dòng tiếp theo là <strong>Dữ liệu</strong>.</li>
+                    <li>Hệ thống sẽ tạo 1 file ảnh QR cho mỗi dòng.</li>
+                    <li>Tên file được đặt tự động dựa trên nội dung.</li>
+                  </ul>
+                </div>
+             </div>
           </div>
 
         </div>
