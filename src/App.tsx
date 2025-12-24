@@ -6,7 +6,7 @@ import { QRDisplay } from './components/QRDisplay';
 import { Toast } from './components/Toast';
 import { DropZone } from './components/DropZone';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { processBatchFile, type BatchProgress } from './utils/batchProcessor';
+import { processBatchFile, processBatchFileToExcel, type BatchProgress } from './utils/batchProcessor';
 import type { Field, QROptions } from './types';
 
 const App: React.FC = () => {
@@ -34,6 +34,10 @@ const App: React.FC = () => {
   // Manual Sub-mode State
   const [manualMode, setManualMode] = useState<'structured' | 'plaintext'>('structured');
   const [plainText, setPlainText] = useLocalStorage<string>('qr-plaintext', '');
+
+  // New Modes
+  const [generatorMode, setGeneratorMode] = useState<'qr' | 'barcode'>('qr');
+  const [batchOutputMode, setBatchOutputMode] = useState<'zip' | 'excel'>('zip');
 
   // Computed value for QR Display
   const qrValue = activeTab === 'manual' 
@@ -82,10 +86,13 @@ const App: React.FC = () => {
     
     setIsProcessing(true);
     try {
-      await processBatchFile(file, qrOptions, (p) => {
-        setProgress(p);
-      });
-      showToast("Tạo hàng loạt thành công! File đã được tải xuống.");
+      if (batchOutputMode === 'zip') {
+        await processBatchFile(file, qrOptions, (p) => setProgress(p));
+        showToast("Tạo ZIP thành công! File đã được tải xuống.");
+      } else {
+        await processBatchFileToExcel(file, qrOptions, (p) => setProgress(p));
+        showToast("Xuất Excel thành công! File đã được tải xuống.");
+      }
     } catch (error) {
       console.error(error);
       showToast("Có lỗi xảy ra khi xử lý file.");
@@ -99,8 +106,34 @@ const App: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         
         {/* Input Section */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Input Section */}
+        <div className="lg:col-span-3 space-y-6 relative">
           
+          {/* Sidebar Generator Mode Switcher */}
+          <div className="absolute -left-16 top-0 hidden xl:flex flex-col gap-2 group">
+             <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-black transition-colors cursor-pointer relative overflow-hidden">
+                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity" />
+                <span className="text-xs font-bold">MODE</span>
+             </div>
+             
+             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 -translate-x-2 group-hover:translate-x-0 duration-300">
+               <button 
+                 onClick={() => setGeneratorMode('qr')}
+                 className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${generatorMode === 'qr' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200 hover:border-black'}`}
+                 title="QR Code"
+               >
+                 QR
+               </button>
+               <button 
+                 onClick={() => setGeneratorMode('barcode')}
+                 className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${generatorMode === 'barcode' ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200 hover:border-black'}`}
+                 title="Barcode"
+               >
+                 Bar
+               </button>
+             </div>
+          </div>
+
           {/* Tab Navigation */}
           <div className="flex bg-gray-100/50 p-1 rounded-xl">
              <button 
@@ -174,8 +207,24 @@ const App: React.FC = () => {
           {/* Batch Export Mode */}
           {activeTab === 'batch' && (
             <div className="mac-card p-6 shadow-sm flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-               <div className="px-1">
+               <div className="px-1 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#86868b]">Tạo hàng loạt (Batch)</span>
+                  
+                  {/* Output Mode Toggle */}
+                  <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                    <button
+                      onClick={() => setBatchOutputMode('zip')}
+                      className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${batchOutputMode === 'zip' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                    >
+                      ZIP (Ảnh)
+                    </button>
+                    <button
+                      onClick={() => setBatchOutputMode('excel')}
+                      className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${batchOutputMode === 'excel' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                    >
+                      Excel (Kèm QR)
+                    </button>
+                  </div>
                </div>
                <DropZone 
                  onFileSelect={handleBatchFile} 
@@ -196,10 +245,9 @@ const App: React.FC = () => {
                   <div className="bg-gray-50 rounded-lg p-4 text-xs text-[#86868b] space-y-2 border border-gray-100">
                     <p className="font-semibold text-gray-900 mb-1">Hướng dẫn sử dụng:</p>
                     <ul className="list-disc list-inside space-y-1 ml-1">
-                      <li>Dòng 1 của file Excel là <strong>Tên trường</strong> (VD: Tên, ID).</li>
-                      <li>Các dòng tiếp theo là <strong>Dữ liệu</strong>.</li>
-                      <li>Hệ thống sẽ tạo 1 file ảnh QR cho mỗi dòng.</li>
-                      <li>Tên file được đặt tự động dựa trên nội dung.</li>
+                      <li>Modes: <strong>ZIP</strong> (tải bộ ảnh) hoặc <strong>Excel</strong> (tải file Excel có chèn ảnh QR).</li>
+                      <li>Dòng 1 của file Excel là <strong>Tên trường</strong>.</li>
+                      <li>Hệ thống sẽ tạo 1 mã cho mỗi dòng.</li>
                     </ul>
                   </div>
                </div>
@@ -244,6 +292,7 @@ const App: React.FC = () => {
              value={qrValue}
              options={qrOptions}
              onShowToast={showToast}
+             mode={generatorMode}
            />
         </div>
       </div>

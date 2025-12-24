@@ -1,16 +1,110 @@
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import QRCode from 'qrcode';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { QROptions } from '../types';
 
 export interface BatchProgress {
   total: number;
   current: number;
-  status: 'parsing' | 'generating' | 'zipping' | 'completed' | 'error';
+  status: 'parsing' | 'generating' | 'zipping' | 'exporting' | 'completed' | 'error';
   errorMessage?: string;
 }
 
+export const processBatchFileToExcel = async (
+    file: File, 
+    options: QROptions,
+    onProgress: (progress: BatchProgress) => void
+  ): Promise<void> => {
+    try {
+      // 1. Parsing Input
+      onProgress({ total: 0, current: 0, status: 'parsing' });
+      const arrayBuffer = await file.arrayBuffer();
+      const workbookInput = XLSX.read(arrayBuffer);
+      const firstSheetName = workbookInput.SheetNames[0];
+      const worksheetInput = workbookInput.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheetInput, { defval: "" });
+  
+      if (jsonData.length === 0) throw new Error("File Excel trống");
+  
+      // 2. Setup Output Workbook (ExcelJS)
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('QR Codes');
+  
+      // Add Headers
+      const headers = Object.keys(jsonData[0]);
+      worksheet.columns = [
+        ...headers.map(key => ({ header: key, key: key, width: 20 })),
+        { header: 'QR Code', key: 'qr_image', width: 25 } // New Column
+      ];
+  
+      const total = jsonData.length;
+      onProgress({ total, current: 0, status: 'generating' });
+  
+      // 3. Process Rows
+      for (let i = 0; i < total; i++) {
+        const row = jsonData[i];
+   
+        // Add row data
+        const addedRow = worksheet.addRow({
+          ...row,
+          qr_image: '' // Placeholder
+        });
+  
+        // Generate QR
+        const qrText = Object.entries(row)
+          .map(([key, value]) => `${key}: ${String(value)}`)
+          .join('\n');
+          
+        if (qrText.trim()) {
+          const dataUrl = await QRCode.toDataURL(qrText, {
+            errorCorrectionLevel: 'M',
+            margin: 1,
+            width: 200, // Smaller for Excel
+            color: {
+               dark: options.colorDark,
+               light: options.colorLight
+            }
+          });
+          
+          // Embed Image
+          const imageId = workbook.addImage({
+            base64: dataUrl,
+            extension: 'png',
+          });
+  
+          // Position Image in the last column
+          worksheet.addImage(imageId, {
+            tl: { col: headers.length, row: i + 1 }, // +1 for header
+            ext: { width: 100, height: 100 },
+            editAs: 'oneCell'
+          });
+  
+          // Adjust Row Height
+          addedRow.height = 80;
+        }
+  
+        if (i % 5 === 0 || i === total - 1) {
+          onProgress({ total, current: i + 1, status: 'generating' });
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+  
+      // 4. Export
+      onProgress({ total, current: total, status: 'exporting' });
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `QR_Batch_Excel_${new Date().getTime()}.xlsx`);
+      
+      onProgress({ total, current: total, status: 'completed' });
+  
+    } catch (error) {
+      console.error(error);
+      onProgress({ total: 0, current: 0, status: 'error', errorMessage: error instanceof Error ? error.message : "Error" });
+    }
+  };
+  
 export const processBatchFile = async (
   file: File, 
   options: QROptions,
