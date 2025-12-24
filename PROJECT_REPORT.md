@@ -126,6 +126,10 @@ Ngoài "Structured Fields" và "Plain Text", hệ thống giờ đây hỗ trợ
 5.  **Rebranding**:
     *   Đổi tên dự án từ `qr-generator` sang `code-generator` để phản ánh đúng khả năng hỗ trợ cả Barcode.
 
-### 6.3. Cập nhật Kiến trúc
+### 6.3. Cập nhật Kiến trúc & Fixes
 - **Thư mục `src/constants`**: Thêm mới để quản lý các dữ liệu tĩnh (danh sách ngân hàng VietQR).
-- **State Management**: Mở rộng `App.tsx` để quản lý state riêng cho từng loại QR form (wifiData, vCardData, locData, ...), giúp giữ lại dữ liệu khi người dùng chuyển qua lại giữa các tab.
+- **State Management**: Mở rộng `App.tsx` để quản lý state riêng cho từng loại QR form.
+- **Batch Processing**:
+    - Dual mode support (QR & Barcode).
+    - Barcode Optimization: Dữ liệu encode sạch (Values separated by hyphen) + Text hiển thị dễ đọc (`Key: Value`).
+    - Fix lỗi xuất Excel trắng cho Barcode.
