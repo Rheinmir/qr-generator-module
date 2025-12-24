@@ -9,6 +9,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { processBatchFile, processBatchFileToExcel, type BatchProgress } from './utils/batchProcessor';
 import type { Field, QROptions } from './types';
 import { QRPay } from 'vietnam-qr-pay';
+import { VIETQR_BANKS } from './constants/banks';
 
 type ManualSubMode = 'structured' | 'plaintext' | 'wifi' | 'vcard' | 'url' | 'email' | 'event' | 'location' | 'vietqr' | 'app';
 
@@ -378,9 +379,19 @@ const App: React.FC = () => {
                          <div className="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg">
                              Tạo mã VietQR (NAPAS 247) để nhận tiền chuyển khoản nhanh.
                          </div>
-                         <div className="grid grid-cols-3 gap-2">
-                            <input className="col-span-1 w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Mã NH (VD: 970415)" value={vietQrData.bankId} onChange={e => setVietQrData({...vietQrData, bankId: e.target.value})} />
-                            <a href="https://api.vietqr.io/v2/banks" target="_blank" className="col-span-2 text-xs flex items-center text-blue-500 underline">Tra cứu mã ngân hàng (BinID)</a>
+                         <div className="grid grid-cols-1 gap-2">
+                            <select 
+                                className="w-full p-3 rounded-lg border border-gray-200 text-sm bg-white"
+                                value={vietQrData.bankId} 
+                                onChange={e => setVietQrData({...vietQrData, bankId: e.target.value})}
+                            >
+                                <option value="">-- Chọn ngân hàng --</option>
+                                {VIETQR_BANKS.map(bank => (
+                                    <option key={bank.id} value={bank.bin}>
+                                        {bank.shortName} - {bank.name}
+                                    </option>
+                                ))}
+                            </select>
                          </div>
                          <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Số tài khoản" value={vietQrData.accountNo} onChange={e => setVietQrData({...vietQrData, accountNo: e.target.value})} />
                          <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" type="number" placeholder="Số tiền (Tùy chọn)" value={vietQrData.amount} onChange={e => setVietQrData({...vietQrData, amount: e.target.value})} />
