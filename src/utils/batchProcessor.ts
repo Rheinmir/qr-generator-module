@@ -61,12 +61,15 @@ export const processBatchFile = async (
       
       const base64Data = dataUrl.split(',')[1];
       
-      // Filename: try to use the first column valid as filename, else index
-      const safeIndex = (i + 1).toString().padStart(3, '0');
-      const firstValue = Object.values(row)[0];
-      const safeName = typeof firstValue === 'string' && firstValue.length > 0 && firstValue.length < 20
-        ? firstValue.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
-        : `qr_code_${safeIndex}`;
+      // Filename: Join all values with ' - '
+      const rawFilename = Object.values(row)
+        .map(val => String(val).trim())
+        .filter(val => val.length > 0)
+        .join(' - ');
+      
+      // Sanitize filename (allow unicode for Vietnamese, replace illegal chars)
+      // Removing: / \ : * ? " < > |
+      const safeName = rawFilename.replace(/[<>:"/\\|?*]/g, '_').trim() || `qr_code_${(i + 1).toString().padStart(3, '0')}`;
         
       zip.file(`${safeName}.png`, base64Data, { base64: true });
       
