@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --mac-bg: #F5F5F7;
+  --mac-card: #FFFFFF;
+  --mac-accent: #000000;
+  --mac-text-secondary: #86868b;
+}
+
+body {
+  background-color: var(--mac-bg);
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mac-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #d2d2d7;
+  border-radius: 10px;
+}

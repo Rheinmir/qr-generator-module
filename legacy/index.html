@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Minimalist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --mac-bg: #F5F5F7;
+            --mac-card: #FFFFFF;
+            --mac-accent: #000000;
+            --mac-text-secondary: #86868b;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--mac-bg);
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .mac-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+        .qr-canvas canvas, .qr-canvas img {
+            margin: 0 auto;
+            border-radius: 12px;
+            max-width: 100%;
+            height: auto !important;
+        }
+        input::placeholder { color: #d2d2d7; }
+        
+        /* Custom scrollbar for Mac look */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: #d2d2d7;
+            border-radius: 10px;
+        }
+        
+        .fields-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4 md:p-8">
+
+    <div class="w-full max-w-4xl space-y-8 animate-in fade-in zoom-in duration-700">
+        
+        <!-- Header -->
+        <header class="text-center space-y-2 py-4">
+            <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">QR Generator</h1>
+            <p class="text-sm text-[#86868b] font-medium">Tối giản. Chuyên nghiệp. Hiệu quả.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+            
+            <!-- Input Section (Left) -->
+            <div class="lg:col-span-3 mac-card p-6 shadow-sm flex flex-col space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-xs font-bold uppercase tracking-widest text-[#86868b]">Cấu trúc thẻ</span>
+                    <button onclick="resetApp()" class="text-xs text-blue-600 hover:underline">Xóa tất cả</button>
+                </div>
+
+                <div id="fields-container" class="fields-scroll space-y-3">
+                    <!-- Fields injected here -->
+                </div>
+
+                <button onclick="addField()" class="group flex items-center justify-center w-full py-4 rounded-xl border border-dashed border-gray-200 hover:border-black transition-all duration-300 text-sm text-[#86868b] hover:text-black mt-2">
+                    <i class="fa-solid fa-plus text-[10px] mr-2 transition-transform group-hover:rotate-90"></i>
+                    Thêm trường dữ liệu mới
+                </button>
+            </div>
+
+            <!-- Preview Section (Right) -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="mac-card p-8 shadow-xl flex flex-col items-center justify-center transition-all hover:shadow-2xl">
+                    <div id="qrcode" class="qr-canvas p-3 bg-white rounded-2xl shadow-inner border border-gray-100 flex items-center justify-center min-h-[180px] min-w-[180px]">
+                        <!-- QR Code renders here -->
+                    </div>
+                    <div class="mt-6 w-full">
+                        <div id="preview-text" class="text-[10px] font-mono text-center text-[#86868b] leading-relaxed break-all bg-gray-50/50 p-3 rounded-lg border border-gray-100/50">
+                            <!-- Raw text preview -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button onclick="downloadQR()" class="w-full bg-black text-white py-4 rounded-2xl font-medium hover:bg-[#333] transition-all active:scale-[0.98] shadow-lg flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-down-to-bracket mr-2"></i> Lưu ảnh QR
+                    </button>
+                    <button onclick="copyToClipboard()" class="w-full bg-white text-black py-4 rounded-2xl font-medium border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-link mr-2 text-xs"></i> Sao chép văn bản
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center py-8">
+            <p class="text-[10px] text-[#86868b] font-medium tracking-wide uppercase">Minimalist Design System</p>
+        </footer>
+    </div>
+
+    <!-- Minimal Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#1d1d1f] text-white px-6 py-3 rounded-full text-xs font-medium shadow-2xl opacity-0 transition-all translate-y-4 pointer-events-none z-50">
+        Thông báo ở đây
+    </div>
+
+    <script>
+        let fields = [
+            { id: 1, key: 'ID', value: '1024' },
+            { id: 2, key: 'NAME', value: 'Alex Nguyen' },
+            { id: 3, key: 'DEPT', value: 'Product Design' }
+        ];
+
+        function init() {
+            renderFields();
+            updateQR();
+        }
+
+        function renderFields() {
+            const container = document.getElementById('fields-container');
+            container.innerHTML = '';
+            
+            fields.forEach((field) => {
+                const div = document.createElement('div');
+                div.className = 'group flex items-center gap-3 animate-in fade-in duration-300';
+                div.innerHTML = `
+                    <div class="flex-1 flex items-center bg-[#F5F5F7] rounded-xl px-3 py-2.5 border border-transparent focus-within:bg-white focus-within:border-black transition-all shadow-sm overflow-hidden">
+                        <input type="text" 
+                            class="w-20 md:w-24 text-[10px] font-bold text-black bg-transparent outline-none uppercase tracking-tighter border-r border-gray-200 mr-3 pr-2 flex-shrink-0" 
+                            value="${field.key}" 
+                            oninput="updateField(${field.id}, 'key', this.value)"
+                            placeholder="KEY">
+                        <input type="text" 
+                            class="flex-1 min-w-0 text-sm bg-transparent outline-none text-gray-700 font-medium" 
+                            value="${field.value}" 
+                            oninput="updateField(${field.id}, 'value', this.value)"
+                            placeholder="Nhập nội dung...">
+                    </div>
+                    <button onclick="removeField(${field.id})" class="text-gray-300 hover:text-red-500 transition-colors p-2 flex-shrink-0">
+                        <i class="fa-solid fa-circle-xmark text-sm"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addField() {
+            fields.push({ id: Date.now(), key: 'NEW', value: '' });
+            renderFields();
+            updateQR();
+            
+            // Tự động cuộn xuống cuối danh sách
+            const scrollContainer = document.getElementById('fields-container');
+            setTimeout(() => {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }, 50);
+        }
+
+        function removeField(id) {
+            if(fields.length <= 1) return showToast("Phải giữ lại ít nhất 1 trường");
+            fields = fields.filter(f => f.id !== id);
+            renderFields();
+            updateQR();
+        }
+
+        function updateField(id, prop, val) {
+            const field = fields.find(f => f.id === id);
+            if (field) {
+                field[prop] = val;
+                updateQR();
+            }
+        }
+
+        function updateQR() {
+            const text = fields.map(f => `${f.key}: ${f.value}`).join('\n');
+            document.getElementById('preview-text').innerText = text || "Chưa có dữ liệu";
+            
+            const qrDiv = document.getElementById("qrcode");
+            qrDiv.innerHTML = "";
+            
+            if (!text.trim()) return;
+
+            try {
+                new QRCode(qrDiv, {
+                    text: text,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                console.error("QR Error:", e);
+            }
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (!canvas) return showToast("Không có mã QR để tải");
+            const link = document.createElement('a');
+            link.download = 'QR_Minimal.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast("Đã lưu mã QR vào máy");
+        }
+
+        function copyToClipboard() {
+            const text = fields.map(f => `${f.key}: ${f.value}`).join('\n');
+            if(!text.trim()) return showToast("Dữ liệu trống");
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("Đã sao chép nội dung văn bản");
+            }).catch(() => {
+                // Fallback for some browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast("Đã sao chép nội dung văn bản");
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2000);
+        }
+
+        function resetApp() {
+            fields = [{ id: 1, key: 'ID', value: '' }];
+            renderFields();
+            updateQR();
+            showToast("Đã làm mới dữ liệu");
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

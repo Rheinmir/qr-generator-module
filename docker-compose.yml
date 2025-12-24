@@ -1,0 +1,8 @@
+services:
+  qr-generator:
+    container_name: qr-generator-server
+    image: ghcr.io/rheinmir/qr-generator:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5175:80"
