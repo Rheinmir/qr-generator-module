@@ -13,16 +13,18 @@ export interface BatchProgress {
   errorMessage?: string;
 }
 
-const generateBarcodeDataUrl = (text: string, options: QROptions): string => {
+const generateBarcodeDataUrl = (text: string, options: QROptions, displayText?: string): string => {
     const canvas = document.createElement('canvas');
     JsBarcode(canvas, text, {
         format: "CODE128",
         lineColor: options.colorDark,
         background: options.colorLight,
         displayValue: true,
+        text: displayText, // Override display text if provided
         width: 2,
         height: 100,
-        margin: 10
+        margin: 10,
+        fontSize: 14 // Readable font size
     });
     return canvas.toDataURL("image/png");
 };
@@ -58,7 +60,7 @@ export const processBatchFileToExcel = async (
       const total = jsonData.length;
       onProgress({ total, current: 0, status: 'generating' });
   
-      // 3. Process Rows
+  // 3. Process Rows
       for (let i = 0; i < total; i++) {
         const row = jsonData[i];
    
@@ -69,27 +71,32 @@ export const processBatchFileToExcel = async (
         });
   
         // Generate Text
-        // For Barcode, usually we take the FIRST column or a specific ID. 
-        // But for consistency with QR, we might join them? 
-        // NO, Barcode usually encodes a single string (Code128). 
-        // Let's assume the user wants to encode the "Combined String" like QR, 
-        // OR simpler: Barcode works best with short text. 
-        // We will stick to the same logic: Join values. 
-        // BUT Barcode has length limits/char limits. 
-        // Let's rely on the same logic.
-        const codeText = Object.entries(row)
-          .map(([key, value]) => `${key}: ${String(value)}`)
-          .join('\n');
+        // For Barcode in batch, we typically encode the VALUES.
+        // And we display the KEYS + VALUES below for human readability.
+        
+        let encodedData = '';
+        let displayText = '';
 
-        // Allow plain text for barcode if it looks like a single valid code? 
-        // Actually for batch, mostly people want to encode ID. 
-        // If they have multiple columns, joining them is the standard behavior of this app so far.
-          
-        if (codeText.trim()) {
+        if (mode === 'qr') {
+             // For QR, we usually encode the full rich text
+             encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+        } else {
+             // For Barcode, we encode values only (joined by -)
+             // Clean values to be safe for Code128 (ASCII)
+             encodedData = Object.values(row)
+                .map(v => String(v).trim())
+                .filter(v => v)
+                .join('-');
+                
+             // Display text: Key: Value | Key: Value
+             displayText = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join(' | ');
+        }
+
+        if (encodedData.trim()) {
           let dataUrl = '';
 
           if (mode === 'qr') {
-             dataUrl = await QRCode.toDataURL(codeText, {
+             dataUrl = await QRCode.toDataURL(encodedData, {
                 errorCorrectionLevel: 'M',
                 margin: 1,
                 width: 200, 
@@ -99,7 +106,7 @@ export const processBatchFileToExcel = async (
                 }
              });
           } else {
-             dataUrl = generateBarcodeDataUrl(codeText, options);
+             dataUrl = generateBarcodeDataUrl(encodedData, options, displayText);
           }
           
           // Embed Image
@@ -169,15 +176,25 @@ export const processBatchFile = async (
 
     for (let i = 0; i < total; i++) {
       const row = jsonData[i];
-      const codeText = Object.entries(row)
-        .map(([key, value]) => `${key}: ${String(value)}`)
-        .join('\n');
+      
+      let encodedData = '';
+      let displayText = '';
+
+      if (mode === 'qr') {
+           encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+      } else {
+           encodedData = Object.values(row)
+              .map(v => String(v).trim())
+              .filter(v => v)
+              .join('-');
+           displayText = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join(' | ');
+      }
         
-      if (!codeText.trim()) continue;
+      if (!encodedData.trim()) continue;
 
       let dataUrl = '';
       if (mode === 'qr') {
-          dataUrl = await QRCode.toDataURL(codeText, {
+          dataUrl = await QRCode.toDataURL(encodedData, {
             errorCorrectionLevel: 'M',
             margin: 1,
             width: 500,
@@ -187,7 +204,7 @@ export const processBatchFile = async (
             }
           });
       } else {
-          dataUrl = generateBarcodeDataUrl(codeText, options);
+          dataUrl = generateBarcodeDataUrl(encodedData, options, displayText);
       }
       
       const base64Data = dataUrl.split(',')[1];
