@@ -9,18 +9,20 @@ export function generateVietQR({ bankBin, accountNumber, amount, content }: { ba
 
   // 38: Merchant Account Information
   // GUID: A000000727
-  // Service Code: QRIBFTTA
   const guid = "0010A000000727";
-  const service = "0108QRIBFTTA"; // QRIBFTTA means Transfer to Account
   
   // Beneficiary Organization (Bank + Account)
   // 00: BIN (6 digits)
   // 01: Account Number
   const binTag = `00${bankBin.length.toString().padStart(2, '0')}${bankBin}`;
   const accTag = `01${accountNumber.length.toString().padStart(2, '0')}${accountNumber}`;
-  const serviceProviderIndexMap = binTag + accTag;
   
-  const id38Content = guid + service + `02${serviceProviderIndexMap.length.toString().padStart(2, '0')}${serviceProviderIndexMap}`;
+  // Tag 01: Beneficiary Organization (Use 01 directly instead of 02 + Service Code)
+  // This is the simplified NAPAS 247 format compatible with most apps
+  const beneficiaryTag = `01${(binTag + accTag).length.toString().padStart(2, '0')}${binTag + accTag}`;
+  
+  // ID 38 Content: GUID + Beneficiary
+  const id38Content = guid + beneficiaryTag;
   const id38 = `38${id38Content.length.toString().padStart(2, '0')}${id38Content}`;
 
   // 53: Transaction Currency (704 = VND)

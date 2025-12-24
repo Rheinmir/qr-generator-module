@@ -223,10 +223,12 @@ const App: React.FC = () => {
               
               {/* Advanced Type Switcher */}
               <div className="grid grid-cols-4 gap-2 mb-2 pb-2 border-b border-gray-100">
+                  {generatorMode === 'qr' && (
                   <button onClick={() => setManualMode('structured')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'structured' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Cấu trúc">
                       <AlignLeft className="w-5 h-5 mb-1" />
                       <span className="text-[9px] font-medium uppercase">Cấu trúc</span>
                   </button>
+                  )}
                   <button onClick={() => setManualMode('plaintext')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'plaintext' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Văn bản">
                       <Hash className="w-5 h-5 mb-1" />
                       <span className="text-[9px] font-medium uppercase">Văn bản</span>
