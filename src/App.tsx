@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, FileSpreadsheet } from 'lucide-react';
+import { Plus, FileSpreadsheet, Wifi, Smartphone, Mail, Globe, MapPin, Calendar, CreditCard, AlignLeft, Hash, Link as LinkIcon } from 'lucide-react';
 import { Layout } from './components/Layout';
 import { FieldInput } from './components/FieldInput';
 import { QRDisplay } from './components/QRDisplay';
@@ -8,6 +8,9 @@ import { DropZone } from './components/DropZone';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { processBatchFile, processBatchFileToExcel, type BatchProgress } from './utils/batchProcessor';
 import type { Field, QROptions } from './types';
+import { QRPay } from 'vietnam-qr-pay';
+
+type ManualSubMode = 'structured' | 'plaintext' | 'wifi' | 'vcard' | 'url' | 'email' | 'event' | 'location' | 'vietqr' | 'app';
 
 const App: React.FC = () => {
   // State
@@ -32,20 +35,83 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'manual' | 'batch'>('manual');
   
   // Manual Sub-mode State
-  const [manualMode, setManualMode] = useState<'structured' | 'plaintext'>('structured');
+  const [manualMode, setManualMode] = useState<ManualSubMode>('structured');
   const [plainText, setPlainText] = useLocalStorage<string>('qr-plaintext', '');
+
+  // Advanced QR States
+  const [wifiData, setWifiData] = useState({ ssid: '', password: '', type: 'WPA', hidden: false });
+  const [vCardData, setVCardData] = useState({ firstName: '', lastName: '', mobile: '', email: '', company: '', job: '', street: '', website: '' });
+  const [urlData, setUrlData] = useState({ url: '', utmSource: '', utmMedium: '', utmCampaign: '' });
+  const [emailData, setEmailData] = useState({ email: '', subject: '', body: '' });
+  const [eventData, setEventData] = useState({ title: '', location: '', start: '', end: '', notes: '' });
+  const [locData, setLocData] = useState({ lat: '', long: '' });
+  const [appData, setAppData] = useState({ appScheme: '', fallback: '' });
+  const [vietQrData, setVietQrData] = useState({ bankId: '', accountNo: '', amount: '', content: '' });
 
   // New Modes
   const [generatorMode, setGeneratorMode] = useState<'qr' | 'barcode'>('qr');
   const [batchOutputMode, setBatchOutputMode] = useState<'zip' | 'excel'>('zip');
 
-  // Computed value for QR Display
-  const qrValue = activeTab === 'manual' 
-    ? (manualMode === 'structured' 
-        ? fields.map(f => `${f.key}: ${f.value}`).join('\n') 
-        : plainText
-      )
-    : ''; // In batch mode, we don't show a specific QR in preview, or we could show a placeholder.
+  // Logic to Generate QR String based on Mode
+  const generateQRString = (): string => {
+    switch (manualMode) {
+      case 'structured':
+        return fields.map(f => `${f.key}: ${f.value}`).join('\n');
+      case 'plaintext':
+        return plainText;
+      case 'wifi':
+        // WIFI:S:ssid;T:WPA;P:password;H:false;;
+        return `WIFI:S:${wifiData.ssid};T:${wifiData.type};P:${wifiData.password};H:${wifiData.hidden};;`;
+      case 'vcard':
+        return `BEGIN:VCARD\nVERSION:3.0\nN:${vCardData.lastName};${vCardData.firstName};;;\nFN:${vCardData.firstName} ${vCardData.lastName}\nORG:${vCardData.company}\nTITLE:${vCardData.job}\nTEL;TYPE=CELL:${vCardData.mobile}\nEMAIL:${vCardData.email}\nADR;TYPE=WORK:;;${vCardData.street};;;;\nURL:${vCardData.website}\nEND:VCARD`;
+      case 'url':
+        let finalUrl = urlData.url;
+        if (urlData.utmSource || urlData.utmCampaign) {
+            const params = new URLSearchParams();
+            if (urlData.utmSource) params.append('utm_source', urlData.utmSource);
+            if (urlData.utmMedium) params.append('utm_medium', urlData.utmMedium);
+            if (urlData.utmCampaign) params.append('utm_campaign', urlData.utmCampaign);
+            finalUrl += (finalUrl.includes('?') ? '&' : '?') + params.toString();
+        }
+        return finalUrl;
+      case 'email':
+        return `mailto:${emailData.email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+      case 'event':
+         // Simplified iCal
+        return `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${eventData.title}\nDTSTART:${eventData.start.replace(/[-:]/g, '')}\nDTEND:${eventData.end.replace(/[-:]/g, '')}\nLOCATION:${eventData.location}\nDESCRIPTION:${eventData.notes}\nEND:VEVENT\nEND:VCALENDAR`;
+      case 'location':
+        return `geo:${locData.lat},${locData.long}`;
+      case 'app':
+        // Universal Link logic is complex (https with apple-app-site-association), usually just URL.
+        // But for Deep Link + Fallback, we can't do logic in QR. QR is static. 
+        // We just encode the App Scheme OR the Fallback URL?
+        // Usually deep link: myapp://path
+        return appData.appScheme || appData.fallback;
+      case 'vietqr':
+        if (!vietQrData.bankId || !vietQrData.accountNo) return "";
+        try {
+            // Using 'any' to bypass potential type mismatch with library version
+            const qrPay = new QRPay(vietQrData.content || "") as any; 
+            if(qrPay.init) {
+                qrPay.init(vietQrData.bankId, vietQrData.accountNo);
+            } else {
+                qrPay.bankId = vietQrData.bankId;
+                qrPay.accountNo = vietQrData.accountNo;
+            }
+            qrPay.amount = vietQrData.amount || "";
+            qrPay.content = vietQrData.content || "";
+            return qrPay.build();
+        } catch(e) {
+            console.error(e);
+            return "";
+        }
+      default:
+        return "";
+    }
+  };
+
+  const qrValue = activeTab === 'manual' ? generateQRString() : ''; 
+
 
   // Handlers
   const showToast = (msg: string) => {
@@ -102,7 +168,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout titleMode={generatorMode}>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         
         {/* Input Section */}
@@ -159,65 +225,189 @@ const App: React.FC = () => {
           {activeTab === 'manual' && (
             <div className="mac-card p-6 shadow-sm flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
-              {/* Sub-mode Switcher */}
-              <div className="flex items-center gap-4 border-b border-gray-100 pb-2 mb-2">
-                 {/* Only show 'Structured' option if NOT in Barcode mode */}
-                 {generatorMode !== 'barcode' && (
-                   <button 
-                     onClick={() => setManualMode('structured')}
-                     className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'structured' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                   >
-                     Cấu trúc (Key-Value)
-                   </button>
-                 )}
-                 <button 
-                   onClick={() => setManualMode('plaintext')}
-                   className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'plaintext' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                 >
-                   Văn bản (Plain Text)
-                 </button>
-                 <div className="flex-1" />
-                 <button onClick={resetApp} className="text-xs text-blue-600 hover:underline">Xóa tất cả</button>
+              {/* Advanced Type Switcher */}
+              <div className="grid grid-cols-4 gap-2 mb-2 pb-2 border-b border-gray-100">
+                  <button onClick={() => setManualMode('structured')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'structured' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Cấu trúc">
+                      <AlignLeft className="w-5 h-5 mb-1" />
+                      <span className="text-[9px] font-medium uppercase">Cấu trúc</span>
+                  </button>
+                  <button onClick={() => setManualMode('plaintext')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'plaintext' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Văn bản">
+                      <Hash className="w-5 h-5 mb-1" />
+                      <span className="text-[9px] font-medium uppercase">Văn bản</span>
+                  </button>
+                   {generatorMode === 'qr' && (
+                     <>
+                        <button onClick={() => setManualMode('wifi')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'wifi' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Wi-Fi">
+                            <Wifi className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">Wi-Fi</span>
+                        </button>
+                        <button onClick={() => setManualMode('vcard')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'vcard' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Danh thiếp">
+                            <Smartphone className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">vCard</span>
+                        </button>
+                        <button onClick={() => setManualMode('url')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'url' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="URL Marketing">
+                            <Globe className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">URL</span>
+                        </button>
+                         <button onClick={() => setManualMode('email')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'email' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Email">
+                            <Mail className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">Email</span>
+                        </button>
+                         <button onClick={() => setManualMode('event')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'event' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Sự kiện">
+                            <Calendar className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">Event</span>
+                        </button>
+                         <button onClick={() => setManualMode('vietqr')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'vietqr' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="VietQR">
+                            <CreditCard className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">VietQR</span>
+                        </button>
+                         <button onClick={() => setManualMode('location')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'location' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Vị trí">
+                            <MapPin className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">Vị trí</span>
+                        </button>
+                         <button onClick={() => setManualMode('app')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'app' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="App">
+                            <LinkIcon className="w-5 h-5 mb-1" />
+                            <span className="text-[9px] font-medium uppercase">App Link</span>
+                        </button>
+                     </>
+                   )}
+              </div>
+              
+              <div className="flex justify-end px-1 pb-4 border-b border-gray-100 mb-4">
+                  <button onClick={resetApp} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                    Xóa tất cả
+                  </button>
               </div>
 
-              {manualMode === 'structured' ? (
-                <>
-                  <div className="max-h-[400px] overflow-y-auto pr-1 space-y-3">
-                    {fields.map(field => (
-                      <FieldInput 
-                        key={field.id} 
-                        field={field} 
-                        onUpdate={updateField} 
-                        onRemove={removeField} 
-                      />
-                    ))}
-                  </div>
+              {/* Forms Content */}
+              <div className="space-y-4">
+                  
+                  {manualMode === 'structured' && (
+                    <>
+                      <div className="max-h-[350px] overflow-y-auto pr-1 space-y-3">
+                        {fields.map(field => (
+                          <FieldInput key={field.id} field={field} onUpdate={updateField} onRemove={removeField} />
+                        ))}
+                      </div>
+                      <button onClick={addField} className="group flex items-center justify-center w-full py-4 rounded-xl border border-dashed border-gray-200 hover:border-black transition-all mt-2 text-sm text-[#86868b] hover:text-black">
+                        <Plus className="w-3 h-3 mr-2 transition-transform group-hover:rotate-90" /> Thêm trường
+                      </button>
+                    </>
+                  )}
 
-                  <button 
-                    onClick={addField} 
-                    className="group flex items-center justify-center w-full py-4 rounded-xl border border-dashed border-gray-200 hover:border-black transition-all duration-300 text-sm text-[#86868b] hover:text-black mt-2"
-                  >
-                    <Plus className="w-3 h-3 mr-2 transition-transform group-hover:rotate-90" />
-                    Thêm trường dữ liệu mới
-                  </button>
-                </>
-              ) : (
-                <div className="relative">
-                  {generatorMode === 'barcode' && (
-                     <div className={`text-[10px] mb-2 px-2 py-1 rounded border ${plainText.length > 20 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                       {plainText.length > 20 
-                         ? `⚠️ Barcode dài (${plainText.length} ký tự) có thể khó quét. Khuyên dùng < 20 ký tự.`
-                         : "ℹ️ Barcode chỉ hỗ trợ chữ cái không dấu và số."}
+                  {manualMode === 'plaintext' && (
+                    <div className="relative">
+                       {generatorMode === 'barcode' && (
+                         <div className={`text-[10px] mb-2 px-2 py-1 rounded border ${plainText.length > 20 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                           {plainText.length > 20 ? `⚠️ Barcode dài (${plainText.length} kí tự) có thể khó quét.` : "ℹ️ Barcode chỉ hỗ trợ chữ cái không dấu và số."}
+                         </div>
+                       )}
+                       <textarea
+                        value={plainText}
+                        onChange={(e) => setPlainText(e.target.value)}
+                        placeholder="Nhập nội dung..."
+                        className="w-full h-[250px] p-4 rounded-xl border border-gray-200 focus:border-black focus:ring-0 text-sm font-mono text-gray-700 bg-gray-50/50"
+                      />
+                    </div>
+                  )}
+
+                  {manualMode === 'wifi' && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Tên Wifi (SSID)" value={wifiData.ssid} onChange={e => setWifiData({...wifiData, ssid: e.target.value})} />
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Mật khẩu" value={wifiData.password} onChange={e => setWifiData({...wifiData, password: e.target.value})} />
+                        <div className="flex gap-2">
+                             <select className="p-3 rounded-lg border border-gray-200 text-sm bg-white flex-1" value={wifiData.type} onChange={e => setWifiData({...wifiData, type: e.target.value})}>
+                                 <option value="WPA">WPA/WPA2</option>
+                                 <option value="WEP">WEP</option>
+                                 <option value="nopass">Không mật khẩu</option>
+                             </select>
+                             <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-white">
+                                 <input type="checkbox" checked={wifiData.hidden} onChange={e => setWifiData({...wifiData, hidden: e.target.checked})} />
+                                 <span className="text-sm">Ẩn?</span>
+                             </label>
+                        </div>
+                    </div>
+                  )}
+
+                  {manualMode === 'url' && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="URL (https://...)" value={urlData.url} onChange={e => setUrlData({...urlData, url: e.target.value})} />
+                        <div className="grid grid-cols-2 gap-2">
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="utm_source (fb, google)" value={urlData.utmSource} onChange={e => setUrlData({...urlData, utmSource: e.target.value})} />
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="utm_medium (cpc, banner)" value={urlData.utmMedium} onChange={e => setUrlData({...urlData, utmMedium: e.target.value})} />
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm col-span-2" placeholder="utm_campaign (sale_2024)" value={urlData.utmCampaign} onChange={e => setUrlData({...urlData, utmCampaign: e.target.value})} />
+                        </div>
+                    </div>
+                  )}
+
+                  {manualMode === 'vcard' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 h-[350px] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-2 gap-2">
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Họ" value={vCardData.lastName} onChange={e => setVCardData({...vCardData, lastName: e.target.value})} />
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Tên" value={vCardData.firstName} onChange={e => setVCardData({...vCardData, firstName: e.target.value})} />
+                        </div>
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Số điện thoại" value={vCardData.mobile} onChange={e => setVCardData({...vCardData, mobile: e.target.value})} />
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Email" value={vCardData.email} onChange={e => setVCardData({...vCardData, email: e.target.value})} />
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Công ty" value={vCardData.company} onChange={e => setVCardData({...vCardData, company: e.target.value})} />
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Chức danh" value={vCardData.job} onChange={e => setVCardData({...vCardData, job: e.target.value})} />
+                        <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Website" value={vCardData.website} onChange={e => setVCardData({...vCardData, website: e.target.value})} />
                      </div>
                   )}
-                  <textarea
-                    value={plainText}
-                    onChange={(e) => setPlainText(e.target.value)}
-                    placeholder={generatorMode === 'barcode' ? "Nhập mã barcode (VD: SP00123)..." : "Nhập nội dung văn bản tại đây..."}
-                    className="w-full h-[300px] p-4 rounded-xl border border-gray-200 focus:border-black focus:ring-0 resize-none text-sm font-mono text-gray-700 bg-gray-50/50"
-                  />
-                </div>
-              )}
+
+                  {manualMode === 'email' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Gửi đến (Email)" value={emailData.email} onChange={e => setEmailData({...emailData, email: e.target.value})} />
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Tiêu đề" value={emailData.subject} onChange={e => setEmailData({...emailData, subject: e.target.value})} />
+                         <textarea className="w-full p-3 rounded-lg border border-gray-200 text-sm h-32" placeholder="Nội dung..." value={emailData.body} onChange={e => setEmailData({...emailData, body: e.target.value})} />
+                     </div>
+                  )}
+
+                  {manualMode === 'event' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Tên sự kiện" value={eventData.title} onChange={e => setEventData({...eventData, title: e.target.value})} />
+                         <div className="grid grid-cols-2 gap-2">
+                             <label className="text-xs text-gray-500">Bắt đầu <input type="datetime-local" className="w-full p-2 border rounded mt-1" onChange={e => setEventData({...eventData, start: e.target.value})} /></label>
+                             <label className="text-xs text-gray-500">Kết thúc <input type="datetime-local" className="w-full p-2 border rounded mt-1" onChange={e => setEventData({...eventData, end: e.target.value})} /></label>
+                         </div>
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Địa điểm" value={eventData.location} onChange={e => setEventData({...eventData, location: e.target.value})} />
+                     </div>
+                  )}
+
+                  {manualMode === 'vietqr' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                         <div className="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg">
+                             Tạo mã VietQR (NAPAS 247) để nhận tiền chuyển khoản nhanh.
+                         </div>
+                         <div className="grid grid-cols-3 gap-2">
+                            <input className="col-span-1 w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Mã NH (VD: 970415)" value={vietQrData.bankId} onChange={e => setVietQrData({...vietQrData, bankId: e.target.value})} />
+                            <a href="https://api.vietqr.io/v2/banks" target="_blank" className="col-span-2 text-xs flex items-center text-blue-500 underline">Tra cứu mã ngân hàng (BinID)</a>
+                         </div>
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Số tài khoản" value={vietQrData.accountNo} onChange={e => setVietQrData({...vietQrData, accountNo: e.target.value})} />
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" type="number" placeholder="Số tiền (Tùy chọn)" value={vietQrData.amount} onChange={e => setVietQrData({...vietQrData, amount: e.target.value})} />
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Nội dung chuyển khoản (Tùy chọn)" value={vietQrData.content} onChange={e => setVietQrData({...vietQrData, content: e.target.value})} />
+                     </div>
+                  )}
+
+                  {manualMode === 'location' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                         <div className="grid grid-cols-2 gap-2">
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Vĩ độ (Latitude)" value={locData.lat} onChange={e => setLocData({...locData, lat: e.target.value})} />
+                             <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Kinh độ (Longitude)" value={locData.long} onChange={e => setLocData({...locData, long: e.target.value})} />
+                         </div>
+                         <div className="text-xs text-center text-gray-400">
+                             Mở Google Maps trên điện thoại để lấy tọa độ.
+                         </div>
+                     </div>
+                  )}
+
+                  {manualMode === 'app' && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="App Scheme (myapp://...)" value={appData.appScheme} onChange={e => setAppData({...appData, appScheme: e.target.value})} />
+                         <input className="w-full p-3 rounded-lg border border-gray-200 text-sm" placeholder="Link tải dự phòng (Store/Web)" value={appData.fallback} onChange={e => setAppData({...appData, fallback: e.target.value})} />
+                     </div>
+                  )}
+
+              </div>
             </div>
           )}
 

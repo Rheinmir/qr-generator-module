@@ -2,15 +2,20 @@ import React, { type ReactNode } from 'react';
 
 interface LayoutProps {
   children: ReactNode;
+  titleMode?: 'qr' | 'barcode' | string;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, titleMode = 'QR' }) => {
+  const displayTitle = titleMode === 'qr' ? 'QR' : (titleMode === 'barcode' ? 'Barcode' : titleMode);
+
   return (
     <div className="flex flex-col items-center min-h-screen p-4 md:p-8 animate-in fade-in zoom-in duration-700">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <header className="text-center space-y-2 py-4">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">QR Generator</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            <span className="text-blue-600">{displayTitle}</span> Generator
+          </h1>
           <p className="text-sm text-[#86868b] font-medium">Tối giản. Chuyên nghiệp. Hiệu quả.</p>
         </header>
 
