@@ -93,3 +93,39 @@ Dưới đây là sơ đồ cây thư mục và giải thích chi tiết chức 
 2.  **Bảo trì (Maintainability)**: TypeScript giúp code minh bạch, IDE hỗ trợ nhắc lệnh tốt, giảm thiểu bug runtime.
 3.  **Hiệu năng (Performance)**: React Virtual DOM và Vite giúp ứng dụng chạy nhanh, reload tức thì khi dev.
 4.  **Trải nghiệm người dùng (UX)**: Dữ liệu được lưu lại tự động, không còn nỗi lo mất dữ liệu khi lỡ tay tắt tab.
+
+## 6. Cập nhật Phase 2: Advanced Features & Refinements (24/12/2024)
+
+Dự án đã được mở rộng mạnh mẽ để hỗ trợ nhiều loại mã QR hơn và cải thiện trải nghiệm người dùng.
+
+### 6.1. Hỗ trợ đa dạng loại QR Code (8+ Loại mới)
+Ngoài "Structured Fields" và "Plain Text", hệ thống giờ đây hỗ trợ tạo nhanh các loại QR chuẩn quốc tế:
+1.  **Wi-Fi**: Tự động kết nối Wifi (hỗ trợ WPA/WEP/NoPass và chuẩn ẩn).
+2.  **vCard (Danh thiếp)**: Tạo QR lưu danh bạ đầy đủ (Tên, SĐT, Email, Công ty, Chức danh, Web...).
+3.  **URL Marketing**: Tích hợp bộ **UTM Builder** để gắn thẻ theo dõi (Source, Medium, Campaign) trực tiếp vào URL.
+4.  **Email**: Soạn sẵn Email với người nhận, tiêu đề và nội dung.
+5.  **Event (Lịch)**: Tạo sự kiện iCalendar (Tiêu đề, Thời gian, Địa điểm, Ghi chú) để thêm vào lịch điện thoại.
+6.  **Location (Vị trí)**: Tạo QR mở Google Maps tại toạ độ chính xác (Lat/Long).
+7.  **VietQR (Thanh toán)**:
+    *   Tích hợp chuẩn **VietQR** (NAPAS 247).
+    *   **Tính năng mới**: Dropdown chọn ngân hàng (hỗ trợ 20+ ngân hàng phổ biến tại VN) thay vì phải nhớ mã Bin.
+    *   Hỗ trợ điền số tài khoản, số tiền và nội dung chuyển khoản.
+8.  **App Deep Link**: Tạo QR mở ứng dụng (App Scheme) hoặc link tải dự phòng.
+
+### 6.2. Cải thiện Giao diện & Trải nghiệm (UI/UX Polish)
+1.  **Smart Mode Switcher**:
+    *   Nút chuyển chế độ QR / Barcode được thiết kế lại, ẩn gọn gàng bên trái và chỉ hiện khi di chuột (Hover interaction).
+    *   Hiệu ứng chuyển động (Animation) mượt mà.
+2.  **Dynamic Application Title**:
+    *   Tiêu đề ứng dụng tự động thay đổi thành "QR Generator" hoặc "Barcode Generator" tùy theo chế độ đang chọn.
+3.  **Barcode Enhancements**:
+    *   Tự động khóa chế độ "Structured" khi sang Barcode (vì Barcode chỉ chứa text ngắn).
+    *   Cảnh báo thông minh khi nội dung Barcode quá dài (>20 ký tự) gây khó quét.
+4.  **Dedicated Forms**:
+    *   Mỗi loại QR có form nhập liệu riêng biệt, chỉ hiện các trường cần thiết, giúp giao diện gọn gàng.
+5.  **Rebranding**:
+    *   Đổi tên dự án từ `qr-generator` sang `code-generator` để phản ánh đúng khả năng hỗ trợ cả Barcode.
+
+### 6.3. Cập nhật Kiến trúc
+- **Thư mục `src/constants`**: Thêm mới để quản lý các dữ liệu tĩnh (danh sách ngân hàng VietQR).
+- **State Management**: Mở rộng `App.tsx` để quản lý state riêng cho từng loại QR form (wifiData, vCardData, locData, ...), giúp giữ lại dữ liệu khi người dùng chuyển qua lại giữa các tab.
