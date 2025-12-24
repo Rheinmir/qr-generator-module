@@ -30,6 +30,18 @@ const App: React.FC = () => {
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'manual' | 'batch'>('manual');
+  
+  // Manual Sub-mode State
+  const [manualMode, setManualMode] = useState<'structured' | 'plaintext'>('structured');
+  const [plainText, setPlainText] = useLocalStorage<string>('qr-plaintext', '');
+
+  // Computed value for QR Display
+  const qrValue = activeTab === 'manual' 
+    ? (manualMode === 'structured' 
+        ? fields.map(f => `${f.key}: ${f.value}`).join('\n') 
+        : plainText
+      )
+    : ''; // In batch mode, we don't show a specific QR in preview, or we could show a placeholder.
 
   // Handlers
   const showToast = (msg: string) => {
@@ -57,7 +69,11 @@ const App: React.FC = () => {
   };
 
   const resetApp = () => {
-    setFields([{ id: Date.now(), key: 'ID', value: '' }]);
+    if (manualMode === 'structured') {
+      setFields([{ id: Date.now(), key: 'ID', value: '' }]);
+    } else {
+      setPlainText('');
+    }
     showToast("Đã làm mới dữ liệu");
   };
 
@@ -83,7 +99,6 @@ const App: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         
         {/* Input Section */}
-        {/* Input Section */}
         <div className="lg:col-span-3 space-y-6">
           
           {/* Tab Navigation */}
@@ -105,29 +120,54 @@ const App: React.FC = () => {
           {/* Manual Input Mode */}
           {activeTab === 'manual' && (
             <div className="mac-card p-6 shadow-sm flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#86868b]">Cấu trúc thẻ</span>
-                <button onClick={resetApp} className="text-xs text-blue-600 hover:underline">Xóa tất cả</button>
+              
+              {/* Sub-mode Switcher */}
+              <div className="flex items-center gap-4 border-b border-gray-100 pb-2 mb-2">
+                 <button 
+                   onClick={() => setManualMode('structured')}
+                   className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'structured' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                 >
+                   Cấu trúc (Key-Value)
+                 </button>
+                 <button 
+                   onClick={() => setManualMode('plaintext')}
+                   className={`text-xs font-semibold uppercase tracking-wider pb-2 border-b-2 transition-colors ${manualMode === 'plaintext' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                 >
+                   Văn bản (Plain Text)
+                 </button>
+                 <div className="flex-1" />
+                 <button onClick={resetApp} className="text-xs text-blue-600 hover:underline">Xóa tất cả</button>
               </div>
 
-              <div className="max-h-[400px] overflow-y-auto pr-1 space-y-3">
-                {fields.map(field => (
-                  <FieldInput 
-                    key={field.id} 
-                    field={field} 
-                    onUpdate={updateField} 
-                    onRemove={removeField} 
-                  />
-                ))}
-              </div>
+              {manualMode === 'structured' ? (
+                <>
+                  <div className="max-h-[400px] overflow-y-auto pr-1 space-y-3">
+                    {fields.map(field => (
+                      <FieldInput 
+                        key={field.id} 
+                        field={field} 
+                        onUpdate={updateField} 
+                        onRemove={removeField} 
+                      />
+                    ))}
+                  </div>
 
-              <button 
-                onClick={addField} 
-                className="group flex items-center justify-center w-full py-4 rounded-xl border border-dashed border-gray-200 hover:border-black transition-all duration-300 text-sm text-[#86868b] hover:text-black mt-2"
-              >
-                <Plus className="w-3 h-3 mr-2 transition-transform group-hover:rotate-90" />
-                Thêm trường dữ liệu mới
-              </button>
+                  <button 
+                    onClick={addField} 
+                    className="group flex items-center justify-center w-full py-4 rounded-xl border border-dashed border-gray-200 hover:border-black transition-all duration-300 text-sm text-[#86868b] hover:text-black mt-2"
+                  >
+                    <Plus className="w-3 h-3 mr-2 transition-transform group-hover:rotate-90" />
+                    Thêm trường dữ liệu mới
+                  </button>
+                </>
+              ) : (
+                <textarea
+                  value={plainText}
+                  onChange={(e) => setPlainText(e.target.value)}
+                  placeholder="Nhập nội dung văn bản tại đây..."
+                  className="w-full h-[300px] p-4 rounded-xl border border-gray-200 focus:border-black focus:ring-0 resize-none text-sm font-mono text-gray-700 bg-gray-50/50"
+                />
+              )}
             </div>
           )}
 
@@ -201,7 +241,7 @@ const App: React.FC = () => {
         {/* Preview Section */}
         <div className="lg:col-span-2">
            <QRDisplay 
-             fields={fields} 
+             value={qrValue}
              options={qrOptions}
              onShowToast={showToast}
            />

@@ -1,18 +1,18 @@
 import React, { useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Link } from 'lucide-react';
-import type { Field, QROptions } from '../types';
+import type { QROptions } from '../types';
 
 interface QRDisplayProps {
-  fields: Field[];
+  value: string;
   options: QROptions;
   onShowToast: (msg: string) => void;
 }
 
-export const QRDisplay: React.FC<QRDisplayProps> = ({ fields, options, onShowToast }) => {
+export const QRDisplay: React.FC<QRDisplayProps> = ({ value, options, onShowToast }) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const qrValue = fields.map(f => `${f.key}: ${f.value}`).join('\n');
+  const qrValue = value;
 
 
   const downloadQR = () => {
