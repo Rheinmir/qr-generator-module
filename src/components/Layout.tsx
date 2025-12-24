@@ -14,7 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, titleMode = 'QR' }) =>
         {/* Header */}
         <header className="text-center space-y-2 py-4">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-            <span className="text-blue-600">{displayTitle}</span> Generator
+            <span className="text-white bg-blue-600 px-3 py-1 rounded-lg shadow-sm align-middle">{displayTitle}</span> Generator
           </h1>
           <p className="text-sm text-[#86868b] font-medium">Tối giản. Chuyên nghiệp. Hiệu quả.</p>
         </header>
