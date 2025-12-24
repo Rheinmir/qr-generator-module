@@ -149,10 +149,10 @@ const App: React.FC = () => {
     setIsProcessing(true);
     try {
       if (batchOutputMode === 'zip') {
-        await processBatchFile(file, qrOptions, (p) => setProgress(p));
+        await processBatchFile(file, qrOptions, generatorMode, (p) => setProgress(p));
         showToast("Tạo ZIP thành công! File đã được tải xuống.");
       } else {
-        await processBatchFileToExcel(file, qrOptions, (p) => setProgress(p));
+        await processBatchFileToExcel(file, qrOptions, generatorMode, (p) => setProgress(p));
         showToast("Xuất Excel thành công! File đã được tải xuống.");
       }
     } catch (error) {

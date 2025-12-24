@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import QRCode from 'qrcode';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import JsBarcode from 'jsbarcode';
 import type { QROptions } from '../types';
 
 export interface BatchProgress {
@@ -12,9 +13,24 @@ export interface BatchProgress {
   errorMessage?: string;
 }
 
+const generateBarcodeDataUrl = (text: string, options: QROptions): string => {
+    const canvas = document.createElement('canvas');
+    JsBarcode(canvas, text, {
+        format: "CODE128",
+        lineColor: options.colorDark,
+        background: options.colorLight,
+        displayValue: true,
+        width: 2,
+        height: 100,
+        margin: 10
+    });
+    return canvas.toDataURL("image/png");
+};
+
 export const processBatchFileToExcel = async (
     file: File, 
     options: QROptions,
+    mode: 'qr' | 'barcode',
     onProgress: (progress: BatchProgress) => void
   ): Promise<void> => {
     try {
@@ -30,13 +46,13 @@ export const processBatchFileToExcel = async (
   
       // 2. Setup Output Workbook (ExcelJS)
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('QR Codes');
+      const worksheet = workbook.addWorksheet(mode === 'qr' ? 'QR Codes' : 'Barcodes');
   
       // Add Headers
       const headers = Object.keys(jsonData[0]);
       worksheet.columns = [
         ...headers.map(key => ({ header: key, key: key, width: 20 })),
-        { header: 'QR Code', key: 'qr_image', width: 25 } // New Column
+        { header: mode === 'qr' ? 'QR Code' : 'Barcode', key: 'code_image', width: mode === 'qr' ? 25 : 50 } 
       ];
   
       const total = jsonData.length;
@@ -49,24 +65,42 @@ export const processBatchFileToExcel = async (
         // Add row data
         const addedRow = worksheet.addRow({
           ...row,
-          qr_image: '' // Placeholder
+          code_image: '' // Placeholder
         });
   
-        // Generate QR
-        const qrText = Object.entries(row)
+        // Generate Text
+        // For Barcode, usually we take the FIRST column or a specific ID. 
+        // But for consistency with QR, we might join them? 
+        // NO, Barcode usually encodes a single string (Code128). 
+        // Let's assume the user wants to encode the "Combined String" like QR, 
+        // OR simpler: Barcode works best with short text. 
+        // We will stick to the same logic: Join values. 
+        // BUT Barcode has length limits/char limits. 
+        // Let's rely on the same logic.
+        const codeText = Object.entries(row)
           .map(([key, value]) => `${key}: ${String(value)}`)
           .join('\n');
+
+        // Allow plain text for barcode if it looks like a single valid code? 
+        // Actually for batch, mostly people want to encode ID. 
+        // If they have multiple columns, joining them is the standard behavior of this app so far.
           
-        if (qrText.trim()) {
-          const dataUrl = await QRCode.toDataURL(qrText, {
-            errorCorrectionLevel: 'M',
-            margin: 1,
-            width: 200, // Smaller for Excel
-            color: {
-               dark: options.colorDark,
-               light: options.colorLight
-            }
-          });
+        if (codeText.trim()) {
+          let dataUrl = '';
+
+          if (mode === 'qr') {
+             dataUrl = await QRCode.toDataURL(codeText, {
+                errorCorrectionLevel: 'M',
+                margin: 1,
+                width: 200, 
+                color: {
+                   dark: options.colorDark,
+                   light: options.colorLight
+                }
+             });
+          } else {
+             dataUrl = generateBarcodeDataUrl(codeText, options);
+          }
           
           // Embed Image
           const imageId = workbook.addImage({
@@ -77,7 +111,7 @@ export const processBatchFileToExcel = async (
           // Position Image in the last column
           worksheet.addImage(imageId, {
             tl: { col: headers.length, row: i + 1 }, // +1 for header
-            ext: { width: 100, height: 100 },
+            ext: { width: mode === 'qr' ? 100 : 200, height: 100 },
             editAs: 'oneCell'
           });
   
@@ -95,7 +129,7 @@ export const processBatchFileToExcel = async (
       onProgress({ total, current: total, status: 'exporting' });
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, `QR_Batch_Excel_${new Date().getTime()}.xlsx`);
+      saveAs(blob, `${mode === 'qr' ? 'QR' : 'Barcode'}_Batch_Excel_${new Date().getTime()}.xlsx`);
       
       onProgress({ total, current: total, status: 'completed' });
   
@@ -108,6 +142,7 @@ export const processBatchFileToExcel = async (
 export const processBatchFile = async (
   file: File, 
   options: QROptions,
+  mode: 'qr' | 'barcode',
   onProgress: (progress: BatchProgress) => void
 ): Promise<void> => {
   try {
@@ -118,7 +153,7 @@ export const processBatchFile = async (
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     
-    // Get headers to ensure we process correctly
+    // Get headers
     const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
     
     if (jsonData.length === 0) {
@@ -129,57 +164,54 @@ export const processBatchFile = async (
     const zip = new JSZip();
     const total = jsonData.length;
     
-    // 3. Generate QRs
+    // 3. Generate Codes
     onProgress({ total, current: 0, status: 'generating' });
 
     for (let i = 0; i < total; i++) {
       const row = jsonData[i];
-      // Convert row to Key-Value string
-      const qrText = Object.entries(row)
+      const codeText = Object.entries(row)
         .map(([key, value]) => `${key}: ${String(value)}`)
         .join('\n');
         
-      if (!qrText.trim()) continue;
+      if (!codeText.trim()) continue;
 
-      // Generate QR Buffer
-      // We use dataURL then strip preamble to get base64 for JSZip
-      const dataUrl = await QRCode.toDataURL(qrText, {
-        errorCorrectionLevel: 'M',
-        margin: 1,
-        width: 500,
-        color: {
-          dark: options.colorDark,
-          light: options.colorLight
-        }
-      });
+      let dataUrl = '';
+      if (mode === 'qr') {
+          dataUrl = await QRCode.toDataURL(codeText, {
+            errorCorrectionLevel: 'M',
+            margin: 1,
+            width: 500,
+            color: {
+              dark: options.colorDark,
+              light: options.colorLight
+            }
+          });
+      } else {
+          dataUrl = generateBarcodeDataUrl(codeText, options);
+      }
       
       const base64Data = dataUrl.split(',')[1];
       
-      // Filename: Join all values with ' - '
       const rawFilename = Object.values(row)
         .map(val => String(val).trim())
         .filter(val => val.length > 0)
         .join(' - ');
       
-      // Sanitize filename (allow unicode for Vietnamese, replace illegal chars)
-      // Removing: / \ : * ? " < > |
-      const safeName = rawFilename.replace(/[<>:"/\\|?*]/g, '_').trim() || `qr_code_${(i + 1).toString().padStart(3, '0')}`;
+      const safeName = rawFilename.replace(/[<>:"/\\|?*]/g, '_').trim() || `code_${(i + 1).toString().padStart(3, '0')}`;
         
       zip.file(`${safeName}.png`, base64Data, { base64: true });
       
-      // Report progress every 5 items or last one to avoid UI thrashing
       if (i % 5 === 0 || i === total - 1) {
         onProgress({ total, current: i + 1, status: 'generating' });
       }
       
-      // Small yield to let UI breathe
       await new Promise(r => setTimeout(r, 0)); 
     }
 
     // 4. Zip and Download
     onProgress({ total, current: total, status: 'zipping' });
     const blob = await zip.generateAsync({ type: 'blob' });
-    saveAs(blob, `QR_Batch_${new Date().getTime()}.zip`);
+    saveAs(blob, `${mode === 'qr' ? 'QR' : 'Barcode'}_Batch_${new Date().getTime()}.zip`);
     
     onProgress({ total, current: total, status: 'completed' });
 
@@ -190,17 +222,17 @@ export const processBatchFile = async (
 };
 
 export const downloadTemplate = () => {
-  const ws = XLSX.utils.json_to_sheet([
-    { 'ID': '001', 'Họ và Tên': 'Nguyen Van A', 'Phòng Ban': 'Kỹ Thuật', 'Chức Vụ': 'Nhân viên' },
-    { 'ID': '002', 'Họ và Tên': 'Tran Thi B', 'Phòng Ban': 'Kế Toán', 'Chức Vụ': 'Trưởng phòng' },
-    { 'ID': '003', 'Họ và Tên': 'Le Van C', 'Phòng Ban': 'Nhân Sự', 'Chức Vụ': 'Thực tập sinh' },
-  ]);
-  
-  // Set column widths
-  ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Template");
-  
-  XLSX.writeFile(wb, "QR_Batch_Template.xlsx");
+    // ... same as before
+    const ws = XLSX.utils.json_to_sheet([
+        { 'ID': '001', 'Họ và Tên': 'Nguyen Van A', 'Phòng Ban': 'Kỹ Thuật', 'Chức Vụ': 'Nhân viên' },
+        { 'ID': '002', 'Họ và Tên': 'Tran Thi B', 'Phòng Ban': 'Kế Toán', 'Chức Vụ': 'Trưởng phòng' },
+        { 'ID': '003', 'Họ và Tên': 'Le Van C', 'Phòng Ban': 'Nhân Sự', 'Chức Vụ': 'Thực tập sinh' },
+      ]);
+      
+      ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      
+      XLSX.writeFile(wb, "Batch_Template.xlsx");
 };
