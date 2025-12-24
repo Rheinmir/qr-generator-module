@@ -3,7 +3,10 @@
 ## 1. Tổng quan dự án
 **QR Generator Pro** là ứng dụng web cho phép người dùng tạo mã QR tùy chỉnh chứa dữ liệu có cấu trúc (Key-Value). 
 - **Mục đích**: Thay thế các công cụ tạo QR tĩnh thông thường, phục vụ nhu cầu tạo thẻ nhân viên, thẻ kho, hoặc danh thiếp điện tử với dữ liệu động.
-- **Điểm đặc biệt**: Tính năng "Dynamic Fields" cho phép thêm/bớt trường dữ liệu tùy ý và dữ liệu được lưu trữ tự động (Persistence) ngay trên trình duyệt của người dùng.
+- **Điểm đặc biệt**: 
+    - Tính năng "Dynamic Fields" cho phép thêm/bớt trường dữ liệu tùy ý.
+    - Dữ liệu được lưu trữ tự động (Persistence).
+    - **Tạo hàng loạt (Batch Export)**: Hỗ trợ nạp file Excel và xuất ra file ZIP chứa toàn bộ QR code.
 
 ## 2. Công nghệ sử dụng (Tech Stack)
 
