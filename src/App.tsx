@@ -7,8 +7,8 @@ import { Toast } from './components/Toast';
 import { DropZone } from './components/DropZone';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { processBatchFile, processBatchFileToExcel, type BatchProgress } from './utils/batchProcessor';
+import { generateVietQR } from './utils/vietqr';
 import type { Field, QROptions } from './types';
-import { QRPay } from 'vietnam-qr-pay';
 import { VIETQR_BANKS } from './constants/banks';
 
 type ManualSubMode = 'structured' | 'plaintext' | 'wifi' | 'vcard' | 'url' | 'email' | 'event' | 'location' | 'vietqr' | 'app';
@@ -91,17 +91,12 @@ const App: React.FC = () => {
       case 'vietqr':
         if (!vietQrData.bankId || !vietQrData.accountNo) return "";
         try {
-            // Using 'any' to bypass potential type mismatch with library version
-            const qrPay = new QRPay(vietQrData.content || "") as any; 
-            if(qrPay.init) {
-                qrPay.init(vietQrData.bankId, vietQrData.accountNo);
-            } else {
-                qrPay.bankId = vietQrData.bankId;
-                qrPay.accountNo = vietQrData.accountNo;
-            }
-            qrPay.amount = vietQrData.amount || "";
-            qrPay.content = vietQrData.content || "";
-            return qrPay.build();
+            return generateVietQR({
+                bankBin: vietQrData.bankId,
+                accountNumber: vietQrData.accountNo,
+                amount: vietQrData.amount,
+                content: vietQrData.content
+            });
         } catch(e) {
             console.error(e);
             return "";
