@@ -118,25 +118,33 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     }
 
     // Map Excel rows to items.
-    // Assumes columns: 'text' (required), 'filename' (optional)
     const items = jsonData
-      .map((row, index) => ({
-        text: row.text || row.content || row.url || Object.values(row)[0], // Fallback to first column
-        filename: row.filename || `qr_${index + 1}.png`,
-        id: index,
-      }))
-      .filter((item) => item.text);
+      .map((row, index) => {
+        // Logic similar to frontend 'processBatchFile'
+        // 1. Content: Join all key-value pairs
+        const text = Object.entries(row)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\n");
+
+        // 2. Filename: Join all values with ' - '
+        const rawFilename = Object.values(row)
+          .map((val) => String(val).trim())
+          .filter((val) => val.length > 0)
+          .join(" - ");
+
+        // Fallback filename if empty
+        const filename = rawFilename || `qr_${index + 1}`;
+
+        return { text, filename, id: index };
+      })
+      .filter((item) => item.text.trim().length > 0);
 
     if (items.length === 0) {
-      return res
-        .status(400)
-        .json({
-          error: "No valid data found in Excel. Ensure a 'text' column exists.",
-        });
+      return res.status(400).json({ error: "No valid data found in Excel." });
     }
 
     const zip = new JSZip();
-    // Default options for now, could be parsed from query params or body fields if needed
+    // Default options
     const options = req.body.options ? JSON.parse(req.body.options) : {};
 
     const qrOptions = {
@@ -151,13 +159,15 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     const promises = items.map(async (item) => {
       const dataUrl = await QRCode.toDataURL(String(item.text), qrOptions);
       const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
-      // Ensure strict filename
-      const safeFilename = item.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-      zip.file(
-        safeFilename.endsWith(".png") ? safeFilename : `${safeFilename}.png`,
-        base64Data,
-        { base64: true }
-      );
+
+      // Sanitize filename
+      let safeFilename = item.filename.replace(/[<>:"/\\|?*]/g, "_").trim();
+      // Ensure extension
+      if (!safeFilename.toLowerCase().endsWith(".png")) {
+        safeFilename += ".png";
+      }
+
+      zip.file(safeFilename, base64Data, { base64: true });
     });
 
     await Promise.all(promises);

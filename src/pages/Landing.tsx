@@ -163,7 +163,11 @@ document.body.appendChild(img);`}
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
                                 <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
-                                    <p className="text-sm text-gray-600 mb-2">Upload a file (multipart/form-data) with key <code>file</code>.</p>
+                                    <p className="text-sm text-gray-600 mb-2">Upload an Excel file. The API automatically:</p>
+                                    <ul className="list-disc list-inside text-sm text-gray-600 mb-3 ml-2">
+                                        <li>Combines <b>all columns</b> (Key: Value) as QR content.</li>
+                                        <li>Uses <b>all values</b> (Val1 - Val2) as the filename.</li>
+                                    </ul>
                                     <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
 {`curl -X POST -F "file=@data.xlsx" \\
      -F 'options={"width":300}' \\
