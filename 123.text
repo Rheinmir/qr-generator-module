@@ -1,0 +1,77 @@
+Tài liệu Yêu cầu Phát triển: Excel Sync & Check-in Monitor
+
+1. Tổng quan Dự án
+
+Ứng dụng được thiết kế để xử lý dữ liệu từ file Excel, hiển thị xem trước (preview) thời gian thực và quản lý trạng thái "Check-in" thông qua tín hiệu từ API bên thứ ba. Dữ liệu sau khi xử lý sẽ được đồng bộ hóa trực tiếp lên hệ thống chia sẻ nội bộ của Microsoft (MS Share Everyone).
+
+2. Triết lý Thiết kế (UI/UX)
+
+Phong cách Macism & Minimalist:
+
+Giao diện sử dụng các đặc trưng của macOS: Nút điều hướng traffic lights (Đỏ, Vàng, Xanh), các góc bo tròn lớn, hiệu ứng kính mờ (glassmorphism).
+
+Sử dụng bảng màu trung tính (Neutral Gray, Apple White) để tập trung sự chú ý vào dữ liệu.
+
+Tối ưu không gian:
+
+Khu vực kéo thả file (Dropzone) mặc định được ẩn, chỉ mở ra khi người dùng nhấn nút "Mở File" để dành tối đa diện tích cho bảng dữ liệu.
+
+Sidebar bên trái quản lý lịch sử tệp và các module bổ trợ.
+
+3. Yêu cầu Chức năng chính
+
+A. Xử lý & Xem trước File (Real-time Preview)
+
+Input: Hỗ trợ các định dạng .xlsx, .xls, .csv.
+
+Preview Mode: * Chế độ Chỉ đọc (Read-only): Tuyệt đối không cho phép chỉnh sửa trực tiếp trên giao diện preview để đảm bảo tính toàn vẹn dữ liệu.
+
+Hỗ trợ cuộn lên/xuống mượt mà và bộ lọc (filter/search) nhanh tại chỗ.
+
+Cấu trúc hiển thị:
+
+Mặc định hiển thị 3 cột dữ liệu đầu tiên từ file gốc.
+
+Các cột dữ liệu thô tiếp theo (Cột 4, 5...) sẽ hiển thị linh hoạt dựa trên không gian màn hình (Responsive).
+
+B. Module Check-in Tự động
+
+Tự động tiêm cột (Column Injection): Hệ thống phải tự động thêm 02 cột vào bất kỳ file nào được mở ra:
+
+Trạng thái Check-in: Hiển thị biểu tượng đã tích hoặc đang chờ.
+
+Thời gian Check-in: Ghi nhận thời điểm chính xác nhận được tín hiệu.
+
+Cố định cột (Sticky Columns): Hai cột Check-in và Thời gian phải được cố định bên phải (sticky right) của bảng để người dùng luôn theo dõi được trạng thái dù cuộn ngang file có nhiều cột.
+
+C. Tích hợp API (Check-in Logic)
+
+Trigger: Trạng thái check-in không được tích thủ công. Nó chỉ được kích hoạt khi hệ thống nhận được một POST request từ API bên ngoài (ví dụ: từ máy quét QR hoặc App Mobile).
+
+Timestamp: Thời gian check-in phải lấy theo thời điểm server/hệ thống nhận được request.
+
+D. Kết nối Hệ thống (MS Share)
+
+Đồng bộ hóa: Dữ liệu sau khi cập nhật trạng thái check-in sẽ được đẩy về folder share của Microsoft (Path mẫu: //MS-SHARE/Everyone/...).
+
+Trạng thái kết nối: Hiển thị đèn báo hiệu tình trạng kết nối với server share thực tế.
+
+4. Thông số Kỹ thuật cho Dev
+
+Frontend: React (ưu tiên Tailwind CSS để xử lý giao diện Macism).
+
+Icons: Sử dụng thư viện Lucide-React.
+
+Quản lý trạng thái: Cần xử lý dữ liệu lớn (Big Data) khi file Excel có hàng ngàn dòng mà vẫn đảm bảo preview không bị lag.
+
+API Endpoint: Cần xây dựng một endpoint nhận ID để match với dữ liệu trong file đang mở.
+
+5. Lộ trình Phát triển (Module mở rộng)
+
+Module Dashboard: Thống kê tỷ lệ check-in theo thời gian thực dưới dạng biểu đồ.
+
+Module Notify: Gửi thông báo về Telegram/Teams khi có một nhân sự check-in thành công.
+
+Module Multi-file: Cho phép mở và quản lý check-in trên nhiều tab file cùng lúc.
+
+Tài liệu này là cơ sở để bàn giao và nghiệm thu dự án.

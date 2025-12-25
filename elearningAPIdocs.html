@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELearning HRM API Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100;200;300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1B3664;
+            --accent-teal: #5BD1C6;
+            --bg-white: #ffffff;
+            --text-dark: #333333;
+            --code-bg: #f8f9fa;
+        }
+        body { 
+            font-family: 'Lexend Deca', sans-serif; 
+            font-weight: 300; 
+            padding: 20px; 
+            line-height: 1.6; 
+            color: var(--text-dark); 
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--bg-white);
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .logo-container img {
+            max-width: 150px;
+            height: auto;
+        }
+        h1, h2, h3 { color: var(--primary-blue); font-weight: 500; }
+        h1 { border-bottom: 3px solid var(--accent-teal); padding-bottom: 10px; display: inline-block;}
+        
+        pre { 
+            background: var(--code-bg); 
+            padding: 15px; 
+            border-radius: 6px; 
+            white-space: pre-wrap;       /* wrap text */
+            word-break: break-all;       /* force break long words/urls */
+            border: 1px solid #e9ecef; 
+            border-left: 4px solid var(--accent-teal);
+            font-size: 13px;
+        }
+        code { 
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; 
+            color: #d63384; 
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        /* Table Styles */
+        .table-container { 
+            overflow-x: auto; 
+            margin-bottom: 30px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            border-radius: 8px; 
+            border: 1px solid #eee;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            font-size: 14px; 
+            background: white;
+            /* removed min-width to prevent overflow */
+        }
+        th, td { 
+            padding: 14px 20px; 
+            text-align: left; 
+            border-bottom: 1px solid #eee; 
+            vertical-align: top;
+        }
+        th { 
+            background-color: var(--primary-blue); 
+            color: white; 
+            font-weight: 500; 
+            white-space: nowrap; 
+            width: 200px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) { background-color: #fcfcfc; }
+
+        /* Specific styles for the request body in table */
+        .nested-code {
+            margin: 0;
+            padding: 10px;
+            background: #f1f3f5;
+            border: none;
+            border-left: none;
+            border-radius: 4px;
+        }
+        
+        .section-title {
+            margin-top: 50px;
+            margin-bottom: 25px;
+            color: var(--primary-blue);
+            border-left: 5px solid var(--accent-teal);
+            padding-left: 15px;
+        }
+        
+        .key-column {
+            font-family: monospace;
+            color: var(--primary-blue);
+            font-weight: 500;
+        }
+        
+        .description-column {
+             color: #555;
+        }
+        .index-column {
+            width: 40px;
+            text-align: center;
+            color: #777;
+            font-size: 13px;
+        }
+
+        /* Print-specific optimizations */
+        @media print {
+            body { 
+                padding: 0; 
+                background: white; 
+                color: #333 !important;
+            }
+            
+            h1 {
+                margin-bottom: 5px !important;
+                padding-bottom: 5px !important;
+            }
+            
+            /* Container shape defined by content */
+            .table-container { 
+                display: block;
+                border: none !important; 
+                border-radius: 12px !important;    
+                overflow: hidden !important;        
+                margin-top: 10px;
+                margin-bottom: 20px;
+                box-shadow: none !important;
+                background-color: transparent !important; /* Removed container color */
+            }
+            
+            * {
+                box-shadow: none !important;
+            }
+            
+            /* Use separate borders to prevent color bleeding/artifacts */
+            table {
+                width: 100%;
+                border-collapse: separate !important; 
+                border-spacing: 0 !important;
+                border-style: hidden !important; 
+                border-radius: 0 !important;
+                margin: -1px; 
+            }
+            
+            th, td {
+                border: none !important; 
+                color: #333 !important;
+                padding: 12px 15px !important;
+            }
+            
+            /* Overlap technique to fix seam: Pull the header slightly to the right */
+            tbody th {
+                border-right: none !important; /* Remove the border we added */
+                position: relative;
+                z-index: 1;
+                margin-right: -1px; /* Overlap right neighbor by 1px */
+                padding-right: 16px !important; /* Add 1px padding to compensate */
+                
+                background-color: #1B3664 !important; 
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Header specific styling - Match Web (Dark Blue, White Text) */
+            thead th {
+                background-color: #1B3664 !important; /* var(--primary-blue) */
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* For Table 1 which uses th in body (Side headers) */
+            tbody th {
+                background-color: #1B3664 !important; 
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* DEFAULT Zebra (Targeting Table 1 - Headerless): 
+               User wants to swap order: Start with Gray (Odd), then White (Even) */
+            tbody tr:nth-child(odd) td {
+                background-color: #fcfcfc !important; /* Start Gray */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            tbody tr:nth-child(even) td {
+                background-color: transparent !important; /* Then White */
+            }
+            
+            /* Even row side-headers (Table 1) handle their own blue color */
+            tbody tr:nth-child(even) th {
+                background-color: #1B3664 !important;
+                color: white !important;
+            }
+
+            /* OVERRIDE for tables WITH headers (Table 2): 
+               Keep standard Web style: Header -> White (Odd) -> Gray (Even) */
+            thead + tbody tr:nth-child(odd) th,
+            thead + tbody tr:nth-child(odd) td {
+                 background-color: transparent !important; /* Start White after Header */
+            }
+
+            thead + tbody tr:nth-child(even) th,
+            thead + tbody tr:nth-child(even) td {
+                 background-color: #fcfcfc !important; /* Then Gray */
+                 -webkit-print-color-adjust: exact;
+                 print-color-adjust: exact;
+            }
+
+            /* Remove the forced first/last child rules so everything is uniform */
+
+            /* Restore code block styles for print */
+            pre {
+                background: var(--code-bg) !important;
+                border: 1px solid #e9ecef !important;
+                border-left: 4px solid var(--accent-teal) !important;
+                border-radius: 6px !important;
+                padding: 15px !important;
+                color: var(--text-dark) !important;
+                white-space: pre-wrap !important;
+                word-wrap: break-word !important;
+                word-break: break-all !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin-top: 10px !important;
+                margin-bottom: 10px !important;
+            }
+
+            code {
+                color: #d63384 !important; /* Restore pink/magenta color */
+                font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Nested code specific adjustments to match web view */
+            .nested-code {
+                background: #f1f3f5 !important;
+                border: none !important;
+                border-left: none !important;
+                padding: 10px !important;
+                margin: 0 !important;
+            }
+            
+
+
+            a[href]:after { content: none !important; }
+            a { text-decoration: none !important; color: #1B3664 !important; }
+            
+            @page {
+                margin: 1.5cm;
+                size: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo-container">
+        <img src="coteccons_logo.png" alt="Coteccons Logo">
+    </div>
+
+    <h1>API Documentation</h1>
+
+
+    <h2 class="section-title">Endpoint Details</h2>
+    
+    <div class="table-container">
+        <table>
+            <tbody>
+                <tr>
+                    <td class="index-column">1</td>
+                    <th>URL</th>
+                    <td><code>https://defaultafc21379100b463d8325cd1686ae94.ca.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/83de7f5ec466410791dc9916e3d1b801/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pWvT6CvFCdfF1ZJEowZVw46LKDaUEd7atJwNzJA057I</code></td>
+                </tr>
+                <tr>
+                    <td class="index-column">2</td>
+                    <th>Method</th>
+                    <td><strong>POST</strong></td>
+                </tr>
+                <tr>
+                    <td class="index-column">3</td>
+                    <th>Request Headers</th>
+                    <td>Content-Type: <code>application/json</code></td>
+                </tr>
+                <tr>
+                    <td class="index-column">4</td>
+                    <th>Request Body (Schema)</th>
+                    <td>
+<pre class="nested-code"><code class="json">{
+    "type": "object",
+    "properties": {
+        "list": { "type": "string" },
+        "password": { "type": "string" }
+    }
+}</code></pre>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="index-column">5</td>
+                    <th>Request Body (Example)</th>
+                    <td>
+<pre class="nested-code"><code class="json">{
+  "list": "emp",
+  "password": "123456"
+}</code></pre>
+;
+<pre class="nested-code"><code class="json">{
+  "list": "org",
+  "password": "123456"
+}</code></pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="section-title">Response</h2>
+    
+    <h3>Example Response (Single Object) - Employee</h3>
+<pre><code class="json">[
+    {
+        "EmployeeName": "Nguyen Van A",
+        "Code": "123456",
+        "ID": "00000000-0000-0000-0000-000000000000",
+        "DOB": "1990-01-01T00:00:00Z",
+        "Gender": "Male",
+        "OrgStructureID": "00000000-0000-0000-0000-000000000001",
+        "OrgStructureName": "Department Name",
+        "JobTileName": "Job Title",
+        "DirectSupervisorID": "00000000-0000-0000-0000-000000000002",
+        "SeniorManagerID": null,
+        "EmployeeLevelName": null,
+        "MobilePhone": "0900000000",
+        "BusinessEmail": "email@example.com",
+        "DateEmployment": "2020-01-01T00:00:00Z",
+        "IDNumber": "123456789",
+        "DateUpdate": "2025-01-01T00:00:00Z",
+        "OrgManagerID": "00000000-0000-0000-0000-000000000003",
+        "OrgManagerID2": null,
+        "OrgManagerID3": null,
+        "OrgDirectorID": null,
+        "OrgDirectorID2": null,
+        "LocationName": null,
+        "EmployeeLevelID": null,
+        "LaborFormName": null,
+        "DateQuit": null,
+        "OrgSeniorManagerID": null
+    }
+]</code></pre>
+
+    <h3>Response Fields Description</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="index-column">No.</th>
+                    <th>Field Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="index-column">1</td><td class="key-column">EmployeeName</td><td>String</td><td class="description-column">Tên đầy đủ của nhân viên</td></tr>
+                <tr><td class="index-column">2</td><td class="key-column">Code</td><td>String</td><td class="description-column">Mã số nhân viên</td></tr>
+                <tr><td class="index-column">3</td><td class="key-column">ID</td><td>String</td><td class="description-column">Định danh duy nhất của nhân viên trong hệ thống</td></tr>
+                <tr><td class="index-column">4</td><td class="key-column">DOB</td><td>DateTime</td><td class="description-column">Ngày tháng năm sinh (ISO 8601)</td></tr>
+                <tr><td class="index-column">5</td><td class="key-column">Gender</td><td>String</td><td class="description-column">Giới tính</td></tr>
+                <tr><td class="index-column">6</td><td class="key-column">OrgStructureID</td><td>String</td><td class="description-column">ID của phòng ban/tổ chức</td></tr>
+                <tr><td class="index-column">7</td><td class="key-column">OrgStructureName</td><td>String</td><td class="description-column">Tên phòng ban/tổ chức</td></tr>
+                <tr><td class="index-column">8</td><td class="key-column">JobTileName</td><td>String</td><td class="description-column">Chức danh công việc</td></tr>
+                <tr><td class="index-column">9</td><td class="key-column">DirectSupervisorID</td><td>String</td><td class="description-column">ID quản lý trực tiếp</td></tr>
+                <tr><td class="index-column">10</td><td class="key-column">SeniorManagerID</td><td>String</td><td class="description-column">ID quản lý cấp cao</td></tr>
+                <tr><td class="index-column">11</td><td class="key-column">EmployeeLevelName</td><td>String</td><td class="description-column">Cấp bậc nhân viên</td></tr>
+                <tr><td class="index-column">12</td><td class="key-column">MobilePhone</td><td>String</td><td class="description-column">Số điện thoại liên hệ</td></tr>
+                <tr><td class="index-column">13</td><td class="key-column">BusinessEmail</td><td>String</td><td class="description-column">Email công việc</td></tr>
+                <tr><td class="index-column">14</td><td class="key-column">DateEmployment</td><td>DateTime</td><td class="description-column">Ngày bắt đầu làm việc</td></tr>
+                <tr><td class="index-column">15</td><td class="key-column">IDNumber</td><td>String</td><td class="description-column">Số CMND/CCCD</td></tr>
+                <tr><td class="index-column">16</td><td class="key-column">DateUpdate</td><td>DateTime</td><td class="description-column">Ngày cập nhật thông tin gần nhất</td></tr>
+                <tr><td class="index-column">17</td><td class="key-column">OrgManagerID</td><td>String</td><td class="description-column">ID trưởng bộ phận</td></tr>
+                <tr><td class="index-column">18</td><td class="key-column">OrgManagerID2</td><td>String</td><td class="description-column">Chưa dùng tới</td></tr>
+                <tr><td class="index-column">19</td><td class="key-column">OrgManagerID3</td><td>String</td><td class="description-column">Chưa dùng tới</td></tr>
+                <tr><td class="index-column">20</td><td class="key-column">OrgDirectorID</td><td>String</td><td class="description-column">Chưa dùng tới</td></tr>
+                <tr><td class="index-column">21</td><td class="key-column">OrgDirectorID2</td><td>String</td><td class="description-column">Chưa dùng tới</td></tr>
+                <tr><td class="index-column">22</td><td class="key-column">LocationName</td><td>String</td><td class="description-column">Địa điểm làm việc (Chưa dùng tới)</td></tr>
+                <tr><td class="index-column">23</td><td class="key-column">EmployeeLevelID</td><td>String</td><td class="description-column">ID cấp bậc (Chưa dùng tới)</td></tr>
+                <tr><td class="index-column">24</td><td class="key-column">LaborFormName</td><td>String</td><td class="description-column">Hình thức lao động (Chưa dùng tới)</td></tr>
+                <tr><td class="index-column">25</td><td class="key-column">DateQuit</td><td>DateTime</td><td class="description-column">Ngày nghỉ việc (nếu có)</td></tr>
+                <tr><td class="index-column">26</td><td class="key-column">OrgSeniorManagerID</td><td>String</td><td class="description-column">Chưa dùng tới</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Example Response (Single Object) - Organization</h3>
+    <pre><code class="json">[
+    {
+        "OrgStructureName": "Phòng Tổng hợp",
+        "ManagerID": "633ff050-a7bd-4aa2-8fe6-076b9af611ad",
+        "DirectorID": null,
+        "Address": null,
+        "ID": "0dc2f687-6b18-4f8b-99f9-0067a547e01d",
+        "CostCenterCodes": null,
+        "CostCenters": null,
+        "SeniorManagerlD": null,
+        "ParentID": "0c8d2d1d-e575-4581-adac-b3d9ccf189c8",
+        "DateUpdate": null
+    }
+]</code></pre>
+
+    <h3>Response Fields Description (Organization)</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="index-column">No.</th>
+                    <th>Field Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="index-column">1</td><td class="key-column">OrgStructureName</td><td>String</td><td class="description-column">Tên phòng ban/tổ chức</td></tr>
+                <tr><td class="index-column">2</td><td class="key-column">ManagerID</td><td>String</td><td class="description-column">ID quản lý</td></tr>
+                <tr><td class="index-column">3</td><td class="key-column">DirectorID</td><td>String</td><td class="description-column">ID giám đốc</td></tr>
+                <tr><td class="index-column">4</td><td class="key-column">Address</td><td>String</td><td class="description-column">Địa chỉ</td></tr>
+                <tr><td class="index-column">5</td><td class="key-column">ID</td><td>String</td><td class="description-column">Định danh duy nhất của đơn vị</td></tr>
+                <tr><td class="index-column">6</td><td class="key-column">CostCenterCodes</td><td>String</td><td class="description-column">Mã Cost Center</td></tr>
+                <tr><td class="index-column">7</td><td class="key-column">CostCenters</td><td>String</td><td class="description-column">Cost Center</td></tr>
+                <tr><td class="index-column">8</td><td class="key-column">SeniorManagerlD</td><td>String</td><td class="description-column">ID quản lý cấp cao</td></tr>
+                <tr><td class="index-column">9</td><td class="key-column">ParentID</td><td>String</td><td class="description-column">ID Parent</td></tr>
+                <tr><td class="index-column">10</td><td class="key-column">DateUpdate</td><td>DateTime</td><td class="description-column">Ngày cập nhật thông tin</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

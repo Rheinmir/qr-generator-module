@@ -1,24 +1,23 @@
-# Stage 1: Build
+
+# Stage 1: Build Frontend
 FROM node:18-alpine as builder
-
 WORKDIR /app
-
-# Install dependencies (cache optimized)
 COPY package*.json ./
 RUN npm ci
-
-# Build the app
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
+# Stage 2: Production Server
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+# Install only production dependencies
+RUN npm ci --omit=dev
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy built assets
+COPY --from=builder /app/dist ./dist
+# Copy server code
+COPY server ./server
 
-# Expose port 80
-EXPOSE 80
-
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+CMD ["node", "server/index.js"]

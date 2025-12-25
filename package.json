@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node server/index.js",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -12,8 +13,11 @@
   "dependencies": {
     "@types/jsbarcode": "^3.11.4",
     "@types/qrcode.react": "^1.0.5",
+    "body-parser": "^2.2.1",
     "buffer": "^6.0.3",
+    "cors": "^2.8.5",
     "exceljs": "^4.4.0",
+    "express": "^5.2.1",
     "file-saver": "^2.0.5",
     "jsbarcode": "^3.12.1",
     "jszip": "^3.10.1",
@@ -23,6 +27,7 @@
     "react": "^19.2.0",
     "react-barcode": "^1.6.1",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.11.0",
     "vietnam-qr-pay": "^1.5.0",
     "xlsx": "^0.18.5"
   },
