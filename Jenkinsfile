@@ -71,7 +71,7 @@ pipeline {
                      
                      docker run -d --name ${CONTAINER_NAME} \
                          --restart unless-stopped \
-                         -p ${HOST_PORT}:80 \
+                         -p ${HOST_PORT}:3000 \
                          ${fullImageName}
                      """
                 }
