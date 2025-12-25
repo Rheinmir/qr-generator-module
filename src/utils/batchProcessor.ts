@@ -78,8 +78,13 @@ export const processBatchFileToExcel = async (
         let displayText = '';
 
         if (mode === 'qr') {
-             // For QR, we usually encode the full rich text
-             encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+             // If multiple columns, include Keys. If single column, just use Value.
+             const keys = Object.keys(row);
+             if (keys.length === 1) {
+                encodedData = String(row[keys[0]]); 
+             } else {
+                encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+             }
         } else {
              // For Barcode, we encode values only (joined by -)
              // Clean values to be safe for Code128 (ASCII)
@@ -181,7 +186,12 @@ export const processBatchFile = async (
       let displayText = '';
 
       if (mode === 'qr') {
-           encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+           const keys = Object.keys(row);
+           if (keys.length === 1) {
+                encodedData = String(row[keys[0]]);
+           } else {
+                encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+           }
       } else {
            encodedData = Object.values(row)
               .map(v => String(v).trim())

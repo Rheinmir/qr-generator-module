@@ -121,10 +121,17 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     const items = jsonData
       .map((row, index) => {
         // Logic similar to frontend 'processBatchFile'
-        // 1. Content: Join all key-value pairs
-        const text = Object.entries(row)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join("\n");
+        // 1. Content:
+        // If multiple columns, include Keys. If single column, just use Value.
+        const keys = Object.keys(row);
+        let text = "";
+        if (keys.length === 1) {
+          text = String(row[keys[0]]);
+        } else {
+          text = Object.entries(row)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n");
+        }
 
         // 2. Filename: Join all values with ' - '
         const rawFilename = Object.values(row)
