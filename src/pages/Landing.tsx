@@ -100,6 +100,27 @@ const Landing: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Usage Example */}
+                        <div className="mt-4 bg-[#f0f9ff] border border-blue-100 rounded-xl p-4">
+                            <h4 className="font-semibold text-[#1B3664] mb-2 text-sm">💡 Usage of Output (Data URI)</h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                                The <code>data</code> field in the response is a Base64 Data URI. You can use it directly in an <code>&lt;img&gt;</code> tag or save it as a file.
+                            </p>
+                            <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+{`<!-- HTML Example -->
+<img src="data:image/png;base64,iVBORw0KGgo..." alt="QR Code" />
+
+// JavaScript Example
+const img = document.createElement('img');
+img.src = response.data;
+document.body.appendChild(img);`}
+                            </div>
+                        </div>
                     </section>
 
                     {/* Endpoint 2: Batch */}
@@ -130,7 +151,6 @@ const Landing: React.FC = () => {
                             </div>
                         </div>
                     </section>
-
                 </div>
             </div>
 
