@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, FileSpreadsheet, Wifi, Smartphone, Mail, Globe, MapPin, Calendar, CreditCard, AlignLeft, Hash, Link as LinkIcon } from 'lucide-react';
+import { Book, Plus, FileSpreadsheet, Wifi, Smartphone, Mail, Globe, MapPin, Calendar, CreditCard, AlignLeft, Hash, Link as LinkIcon } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { FieldInput } from '../components/FieldInput';
 import { QRDisplay } from '../components/QRDisplay';
@@ -172,6 +172,18 @@ const Generator: React.FC = () => {
         {/* Input Section */}
         <div className="lg:col-span-3 space-y-6 relative">
           
+
+          {/* New Header Actions */}
+          <div className="flex justify-end mb-4">
+              <button 
+                  onClick={() => window.location.href = '/docs'}
+                  className="bg-white hover:bg-gray-50 text-[#1B3664] border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                  <Book className="w-3.5 h-3.5 text-[#5BD1C6]" />
+                  <span>API Integration Guide</span>
+              </button>
+          </div>
+
           {/* Refined Sidebar Mode Switcher */}
           <div className="absolute -left-14 top-0 z-10 hidden xl:flex flex-col gap-2 group">
              <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-sm shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-black group-hover:bg-white transition-all cursor-pointer overflow-hidden">

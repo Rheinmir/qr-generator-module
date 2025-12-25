@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Book, Code, Terminal, Database } from 'lucide-react';
+import { ArrowLeft, Book, Code, Terminal, Database } from 'lucide-react';
 
 const Landing: React.FC = () => {
     const navigate = useNavigate();
@@ -21,11 +21,11 @@ const Landing: React.FC = () => {
                     </p>
                     <div className="flex gap-4">
                         <button 
-                            onClick={() => navigate('/app')}
-                            className="bg-[#5BD1C6] text-[#1B3664] hover:bg-[#4cbdb3] px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-all flex items-center gap-2 group"
+                            onClick={() => navigate('/')}
+                            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-all flex items-center gap-2 group"
                         >
-                            Open Generator App
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                            Back to Generator
                         </button>
                         <a 
                             href="#documentation"
