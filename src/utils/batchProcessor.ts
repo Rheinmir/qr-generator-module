@@ -165,8 +165,26 @@ export const processBatchFile = async (
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     
-    // Get headers
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+    // Check for 'Table' heuristics (e.g. Autofilter)
+    // If not found, assume Raw Data Mode (no headers).
+    // Note: accessing private props like !autofilter requires casting in TS usually, but here checking prop existence.
+    const isTableLike = !!(worksheet['!autofilter'] || worksheet['!tbl']); 
+
+    let jsonData: any[] = [];
+
+    if (isTableLike) {
+        // Table Mode: Use headers (Key: Value)
+        jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+    } else {
+        // Raw Mode: No headers, array of arrays
+        // We want to process EVERY row including the first one.
+        const rawData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "" });
+        
+        // Filter empty rows
+        jsonData = rawData.filter(row => row.length > 0 && row.some((c: any) => c !== ""));
+        
+        // Normalize to objects for downstream loop, but we will flag it as !isTableLike
+    }
     
     if (jsonData.length === 0) {
       throw new Error("File Excel trống hoặc không đúng định dạng");
@@ -180,25 +198,37 @@ export const processBatchFile = async (
     onProgress({ total, current: 0, status: 'generating' });
 
     for (let i = 0; i < total; i++) {
-      const row = jsonData[i];
+        const row = jsonData[i];
+        let encodedData = '';
+        let displayText = '';
       
-      let encodedData = '';
-      let displayText = '';
-
-      if (mode === 'qr') {
-           const keys = Object.keys(row);
-           if (keys.length === 1) {
-                encodedData = String(row[keys[0]]);
-           } else {
-                encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
-           }
-      } else {
-           encodedData = Object.values(row)
-              .map(v => String(v).trim())
-              .filter(v => v)
-              .join('-');
-           displayText = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join(' | ');
-      }
+        if (mode === 'qr') {
+             if (isTableLike) {
+                 // Table Mode: Key: Value (Standard)
+                 encodedData = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join('\n');
+             } else {
+                 // Raw Mode: Join all cell values in the row
+                 if (Array.isArray(row)) {
+                     encodedData = row.map(v => String(v || '').trim()).filter(v => v).join('\n');
+                 } else {
+                     encodedData = Object.values(row).map(v => String(v).trim()).filter(v => v).join('\n');
+                 }
+             }
+        } else {
+            // Barcode Mode
+            if (isTableLike && !Array.isArray(row)) {
+                 encodedData = Object.values(row)
+                    .map(v => String(v).trim())
+                    .filter(v => v)
+                    .join('-');
+                 displayText = Object.entries(row).map(([k,v]) => `${k}: ${v}`).join(' | ');
+            } else {
+                 // Raw Mode
+                 const values = Array.isArray(row) ? row : Object.values(row);
+                 encodedData = values.map((v: any) => String(v || '').trim()).filter((v: any) => v).join('-');
+                 displayText = encodedData; 
+            }
+        }
         
       if (!encodedData.trim()) continue;
 

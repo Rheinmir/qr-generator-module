@@ -109,7 +109,37 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+    // Check for explicit 'header' option in request body options
+    const options = req.body.options ? JSON.parse(req.body.options) : {};
+
+    // Check for 'Table' heuristics (e.g. Autofilter)
+    // using bracket notation for keys that might not exist in TS types
+    // Priority: Explicit Option > Autofilter Detection
+    let isTableLike = false;
+
+    if (options.header !== undefined) {
+      isTableLike = Boolean(options.header);
+    } else {
+      isTableLike = !!(sheet["!autofilter"] || sheet["!tbl"]);
+    }
+
+    let jsonData = [];
+    if (isTableLike) {
+      jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    } else {
+      const rawData = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: "",
+      });
+      // Filter empty rows and ensure it's not just array of empty strings
+      jsonData = rawData.filter(
+        (row) =>
+          Array.isArray(row) &&
+          row.length > 0 &&
+          row.some((c) => c !== "" && c != null)
+      );
+    }
 
     if (!jsonData || jsonData.length === 0) {
       return res
@@ -121,23 +151,41 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     const items = jsonData
       .map((row, index) => {
         // Logic similar to frontend 'processBatchFile'
-        // 1. Content:
-        // If multiple columns, include Keys. If single column, just use Value.
-        const keys = Object.keys(row);
         let text = "";
-        if (keys.length === 1) {
-          text = String(row[keys[0]]);
-        } else {
+
+        if (isTableLike) {
+          // Table Mode: Use Key: Value
           text = Object.entries(row)
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n");
+        } else {
+          // Raw Mode: Join Values
+          if (Array.isArray(row)) {
+            text = row
+              .map((v) => String(v || "").trim())
+              .filter((v) => v)
+              .join("\n");
+          } else {
+            text = Object.values(row)
+              .map((v) => String(v).trim())
+              .filter((v) => v)
+              .join("\n");
+          }
         }
 
-        // 2. Filename: Join all values with ' - '
-        const rawFilename = Object.values(row)
-          .map((val) => String(val).trim())
-          .filter((val) => val.length > 0)
-          .join(" - ");
+        // Filename: Join values
+        let rawFilename = "";
+        if (Array.isArray(row)) {
+          rawFilename = row
+            .map((v) => String(v || "").trim())
+            .filter((v) => v)
+            .join(" - ");
+        } else {
+          rawFilename = Object.values(row)
+            .map((v) => String(v).trim())
+            .filter((v) => v)
+            .join(" - ");
+        }
 
         // Fallback filename if empty
         const filename = rawFilename || `qr_${index + 1}`;
@@ -151,8 +199,6 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     }
 
     const zip = new JSZip();
-    // Default options
-    const options = req.body.options ? JSON.parse(req.body.options) : {};
 
     const qrOptions = {
       color: {

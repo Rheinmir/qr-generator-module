@@ -170,8 +170,12 @@ document.body.appendChild(img);`}
                                     </ul>
                                     <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
 {`curl -X POST -F "file=@data.xlsx" \\
-     -F 'options={"width":300}' \\
-     http://localhost:3000/api/generate/excel --output qrcodes.zip`}
+     -F 'options={"width":300, "header": true}' \\
+     http://localhost:3000/api/generate/excel --output qrcodes.zip
+
+# "header": true  => Force Key: Value mode (Table)
+# "header": false => Force Value-only mode (Raw, Row 1 = Data)
+# (omitted)       => Auto-detect (Smart Mode)`}
                                     </div>
                                 </div>
                             </div>
