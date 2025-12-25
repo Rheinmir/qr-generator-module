@@ -147,6 +147,32 @@ document.body.appendChild(img);`}
                             </div>
                         </div>
                     </section>
+
+                    {/* Endpoint 3: Excel */}
+                    <section className="mt-8">
+                        <h3 className="text-xl font-semibold text-[#1B3664] border-l-4 border-green-500 pl-3 mb-4">
+                            3. Generate from Excel (ZIP)
+                        </h3>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">URL</div>
+                                <div className="p-4 font-mono text-sm break-all text-blue-600">
+                                    POST /api/generate/excel
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
+                                <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
+                                    <p className="text-sm text-gray-600 mb-2">Upload a file (multipart/form-data) with key <code>file</code>.</p>
+                                    <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+{`curl -X POST -F "file=@data.xlsx" \\
+     -F 'options={"width":300}' \\
+     http://localhost:3000/api/generate/excel --output qrcodes.zip`}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
 
