@@ -100,10 +100,6 @@ const Landing: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                                    </pre>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Usage Example */}
                         <div className="mt-4 bg-[#f0f9ff] border border-blue-100 rounded-xl p-4">
