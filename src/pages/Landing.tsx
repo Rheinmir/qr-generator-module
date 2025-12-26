@@ -160,6 +160,10 @@ document.body.appendChild(img);`}
                                     POST /api/generate/excel
                                 </div>
                             </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Header</div>
+                                <div className="p-4 font-mono text-gray-700 text-sm">Content-Type: multipart/form-data</div>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
                                 <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
@@ -176,6 +180,84 @@ document.body.appendChild(img);`}
 # "header": true  => Force Key: Value mode (Table)
 # "header": false => Force Value-only mode (Raw, Row 1 = Data)
 # (omitted)       => Auto-detect (Smart Mode)`}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Endpoint 4: Payment QR */}
+                    <section className="mt-8">
+                        <h3 className="text-xl font-semibold text-[#1B3664] border-l-4 border-purple-500 pl-3 mb-4">
+                            4. Generate Payment QR (VietQR)
+                        </h3>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">URL</div>
+                                <div className="p-4 font-mono text-sm break-all text-blue-600">
+                                    POST /api/generate/payment
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Header</div>
+                                <div className="p-4 font-mono text-gray-700 text-sm">Content-Type: application/json</div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
+                                <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
+                                    <p className="text-sm text-gray-600 mb-3">Generate standard VietQR code for bank transfer.</p>
+                                    
+                                    <div className="mb-4">
+                                        <h4 className="font-semibold text-sm mb-2 text-gray-700">JSON Fields:</h4>
+                                        <table className="w-full text-sm border-collapse border border-gray-200 bg-white">
+                                            <thead>
+                                                <tr className="bg-gray-100 text-left">
+                                                    <th className="p-2 border">Field</th>
+                                                    <th className="p-2 border">Type</th>
+                                                    <th className="p-2 border">Required</th>
+                                                    <th className="p-2 border">Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td className="p-2 border font-mono">bankBin</td>
+                                                    <td className="p-2 border">String</td>
+                                                    <td className="p-2 border text-red-500">Yes</td>
+                                                    <td className="p-2 border">Bank Bin Code (e.g. 970422 for MB)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-2 border font-mono">accountNumber</td>
+                                                    <td className="p-2 border">String</td>
+                                                    <td className="p-2 border text-red-500">Yes</td>
+                                                    <td className="p-2 border">Bank Account Number</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td className="p-2 border font-mono">amount</td>
+                                                    <td className="p-2 border">Number/String</td>
+                                                    <td className="p-2 border">No</td>
+                                                    <td className="p-2 border">Transfer Amount (VND)</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td className="p-2 border font-mono">content</td>
+                                                    <td className="p-2 border">String</td>
+                                                    <td className="p-2 border">No</td>
+                                                    <td className="p-2 border">Transfer Description</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <h4 className="font-semibold text-sm mb-2 text-gray-700">Example (cURL):</h4>
+                                    <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+{`curl -X POST http://localhost:3000/api/generate/payment \\
+     -H "Content-Type: application/json" \\
+     -d '{
+       "bankBin": "970422",
+       "accountNumber": "123456789",
+       "amount": "50000",
+       "content": "Tra tien an trua",
+       "options": {"width": 300}
+     }'`}
                                     </div>
                                 </div>
                             </div>

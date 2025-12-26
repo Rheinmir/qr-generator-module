@@ -21,6 +21,76 @@ app.use(cors());
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
+// --- Helper Functions ---
+
+// CRC16 (CCITT-False) for VietQR
+function calculateCRC16(str) {
+  let crc = 0xffff;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    crc ^= c << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc = crc << 1;
+      }
+    }
+  }
+  crc &= 0xffff;
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function generateVietQR({ bankBin, accountNumber, amount, content }) {
+  // 00: Payload Format Indicator
+  const id00 = "000201";
+
+  // 01: Point of Initiation Method
+  const id01 = amount ? "010212" : "010211";
+
+  // 38: Merchant Account Information (GUID + NAPAS)
+  const guid = "0010A000000727";
+  const binTag = `00${bankBin.length.toString().padStart(2, "0")}${bankBin}`;
+  const accTag = `01${accountNumber.length
+    .toString()
+    .padStart(2, "0")}${accountNumber}`;
+  const beneficiaryTag = `01${(binTag + accTag).length
+    .toString()
+    .padStart(2, "0")}${binTag + accTag}`;
+
+  const id38Content = guid + beneficiaryTag;
+  const id38 = `38${id38Content.length
+    .toString()
+    .padStart(2, "0")}${id38Content}`;
+
+  // 53: Currency (VND)
+  const id53 = "5303704";
+
+  // 54: Amount (Optional)
+  let id54 = "";
+  if (amount) {
+    id54 = `54${amount.toString().length.toString().padStart(2, "0")}${amount}`;
+  }
+
+  // 58: Country (VN)
+  const id58 = "5802VN";
+
+  // 62: Additional Data (Content)
+  let id62 = "";
+  if (content) {
+    const contentTag = `08${content.length
+      .toString()
+      .padStart(2, "0")}${content}`;
+    id62 = `62${contentTag.length.toString().padStart(2, "0")}${contentTag}`;
+  }
+
+  // Assemble
+  const rawQR = id00 + id01 + id38 + id53 + id54 + id58 + id62 + "6304";
+  const crc = calculateCRC16(rawQR);
+
+  return rawQR + crc;
+}
+
 // --- API Routes ---
 
 // 1. Plaintext / Single Mode
@@ -233,6 +303,47 @@ app.post("/api/generate/excel", upload.single("file"), async (req, res) => {
     res.send(content);
   } catch (error) {
     console.error("Excel Generation Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 4. Payment QR (VietQR) Mode
+app.post("/api/generate/payment", async (req, res) => {
+  try {
+    const { bankBin, accountNumber, amount, content, options } = req.body;
+
+    if (!bankBin || !accountNumber) {
+      return res
+        .status(400)
+        .json({ error: "Missing bankBin or accountNumber" });
+    }
+
+    // Generate VietQR String
+    const qrString = generateVietQR({
+      bankBin,
+      accountNumber,
+      amount,
+      content,
+    });
+
+    const qrOptions = {
+      color: {
+        dark: options?.colorDark || "#000000",
+        light: options?.colorLight || "#ffffff",
+      },
+      width: options?.width || 500,
+      margin: options?.margin || 2,
+    };
+
+    const dataUrl = await QRCode.toDataURL(qrString, qrOptions);
+    res.json({
+      success: true,
+      data: dataUrl,
+      qrString: qrString, // Return the raw string too
+      format: "data/png",
+    });
+  } catch (error) {
+    console.error("Payment QR Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
