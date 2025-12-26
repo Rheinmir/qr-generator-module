@@ -180,37 +180,79 @@ document.body.appendChild(img);`}
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
                                 <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 1: Excel File</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
-                                    <p className="text-sm text-gray-600 mb-3">Create an Excel file with this structure:</p>
+                                    <p className="text-sm text-gray-600 mb-3">Create an Excel file (e.g., <code>data.xlsx</code>) with a header row.</p>
                                     
                                     <div className="bg-white border rounded-lg overflow-hidden mb-3">
                                         <table className="w-full text-sm text-left">
                                             <thead className="bg-gray-100 border-b">
                                                 <tr>
-                                                    <th className="p-2 border-r font-medium text-gray-700">Name (Header)</th>
-                                                    <th className="p-2 border-r font-medium text-gray-700">ID (Header)</th>
-                                                    <th className="p-2 font-medium text-gray-700">Date (Header)</th>
+                                                    <th className="p-2 border-r font-medium text-gray-700">Full Name</th>
+                                                    <th className="p-2 border-r font-medium text-gray-700">Code</th>
+                                                    <th className="p-2 border-r font-medium text-gray-700">Department</th>
+                                                    <th className="p-2 font-medium text-gray-700 text-gray-400 italic">... (Any Columns)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
                                                     <td className="p-2 border-r text-gray-600">Nguyen Van A</td>
                                                     <td className="p-2 border-r text-gray-600">NV001</td>
-                                                    <td className="p-2 text-gray-600">2024-01-01</td>
+                                                    <td className="p-2 border-r text-gray-600">IT</td>
+                                                    <td className="p-2 text-gray-400 italic">...</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-2 border-r text-gray-600">Tran Thi B</td>
+                                                    <td className="p-2 border-r text-gray-600">NV002</td>
+                                                    <td className="p-2 border-r text-gray-600">HR</td>
+                                                    <td className="p-2 text-gray-400 italic">...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    <p className="text-xs text-gray-500 italic">
-                                        * The API will generate a QR containing: "Name: Nguyen Van A, ID: NV001, Date: 2024-01-01"
-                                    </p>
+                                    <div className="space-y-2 text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-100">
+                                        <p><strong>🔹 Dynamic Columns:</strong> You can add <strong>unlimited columns</strong>. The API automatically reads all "Header: Value" pairs.</p>
+                                        <p><strong>🔹 QR Content Logic:</strong> <code className="bg-white px-1 rounded">Full Name: Nguyen Van A, Code: NV001, Department: IT</code></p>
+                                        <p><strong>🔹 File Name Logic:</strong> The generated image name will be combined from values: <code className="bg-white px-1 rounded">Nguyen Van A - NV001 - IT.png</code></p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 2: Test</div>
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 2: Test Command</div>
                                 <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
-{`curl -X POST -F "file=@data.xlsx" \\
+{`# Basic Usage:
+curl -X POST -F "file=@/path/to/your/data.xlsx" \\
+     http://localhost:3000/api/generate/excel \\
+     --output qrcodes.zip
+
+# Advanced Usage (with Options):
+curl -X POST -F "file=@data.xlsx" \\
+     -F 'options={"width": 400, "header": true}' \\
      http://localhost:3000/api/generate/excel \\
      --output qrcodes.zip`}
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-t">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Details</div>
+                                <div className="p-4 bg-white text-sm text-gray-600 space-y-3">
+                                    <div>
+                                        <strong className="text-gray-800">1. File Attachment (<code>-F "file=@..."</code>)</strong>
+                                        <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
+                                            <li><code>file</code>: The required form field name for the upload.</li>
+                                            <li><code>@</code>: Telling cURL this is a <strong>file path</strong>, not a string.</li>
+                                            <li>Run this command from the folder containing your file, or provide the <span className="text-orange-600">absolute path</span> (e.g., <code>@C:/Users/Admin/Desktop/data.xlsx</code> or <code>@/Users/john/data.xlsx</code>).</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <strong className="text-gray-800">2. Options (<code>-F 'options=...'</code>)</strong>
+                                        <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
+                                            <li><code>width</code> (number): Size of the QR image (default: 300).</li>
+                                            <li><code>header</code> (boolean): 
+                                                <ul className="list-[square] list-inside ml-4 text-gray-500">
+                                                    <li><code>true</code>: Include headers in content (Key: Value).</li>
+                                                    <li><code>false</code>: Data values only (Value1, Value2...).</li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
