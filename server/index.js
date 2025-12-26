@@ -7,6 +7,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { uploadQRImage } from "./cloudinaryConfig.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -347,6 +349,190 @@ app.post("/api/generate/payment", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// 5. Excel with QR Links Mode (Upload to Cloudinary)
+app.post(
+  "/api/generate/excel-with-links",
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Check if Cloudinary is configured
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY
+      ) {
+        return res.status(500).json({
+          error:
+            "Cloudinary not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET environment variables.",
+        });
+      }
+
+      const options = req.body.options ? JSON.parse(req.body.options) : {};
+
+      // Read Excel buffer
+      const workbookInput = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheetName = workbookInput.SheetNames[0];
+      const sheet = workbookInput.Sheets[sheetName];
+
+      // Determine if table-like (has headers)
+      let isTableLike = false;
+      if (options.header !== undefined) {
+        isTableLike = Boolean(options.header);
+      } else {
+        isTableLike = !!(sheet["!autofilter"] || sheet["!tbl"]);
+      }
+
+      let jsonData = [];
+      if (isTableLike) {
+        jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      } else {
+        const rawData = XLSX.utils.sheet_to_json(sheet, {
+          header: 1,
+          defval: "",
+        });
+        jsonData = rawData.filter(
+          (row) =>
+            Array.isArray(row) &&
+            row.length > 0 &&
+            row.some((c) => c !== "" && c != null)
+        );
+      }
+
+      if (!jsonData || jsonData.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "Empty Excel file or invalid format" });
+      }
+
+      // Setup Output Workbook (ExcelJS)
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("QR Links");
+
+      // Get headers from data
+      let headers = [];
+      if (isTableLike && jsonData.length > 0) {
+        headers = Object.keys(jsonData[0]);
+      } else {
+        // For raw data, create generic column names
+        const maxCols = Math.max(
+          ...jsonData.map((row) =>
+            Array.isArray(row) ? row.length : Object.keys(row).length
+          )
+        );
+        headers = Array.from({ length: maxCols }, (_, i) => `Column ${i + 1}`);
+      }
+
+      // Setup columns
+      worksheet.columns = [
+        ...headers.map((key) => ({ header: key, key: key, width: 20 })),
+        { header: "QR Link", key: "qr_link", width: 60 },
+      ];
+
+      const qrOptions = {
+        color: {
+          dark: options?.colorDark || "#000000",
+          light: options?.colorLight || "#ffffff",
+        },
+        width: parseInt(options?.width) || 500,
+        margin: parseInt(options?.margin) || 1,
+      };
+
+      const timestamp = Date.now();
+
+      // Process each row
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+
+        // Generate QR text
+        let qrText = "";
+        if (isTableLike) {
+          qrText = Object.entries(row)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n");
+        } else if (Array.isArray(row)) {
+          qrText = row
+            .map((v) => String(v || "").trim())
+            .filter((v) => v)
+            .join("\n");
+        } else {
+          qrText = Object.values(row)
+            .map((v) => String(v).trim())
+            .filter((v) => v)
+            .join("\n");
+        }
+
+        if (!qrText.trim()) continue;
+
+        // Generate QR data URL
+        const dataUrl = await QRCode.toDataURL(qrText, qrOptions);
+
+        // Upload to Cloudinary
+        const filename = `qr_${timestamp}_${i + 1}`;
+        let qrLink = "";
+        try {
+          qrLink = await uploadQRImage(dataUrl, filename);
+        } catch (uploadError) {
+          console.error(`Failed to upload QR ${i + 1}:`, uploadError.message);
+          qrLink = `[Upload Error: ${uploadError.message}]`;
+        }
+
+        // Add row to worksheet
+        const rowData = isTableLike ? { ...row } : {};
+        if (!isTableLike && Array.isArray(row)) {
+          row.forEach((val, idx) => {
+            rowData[`Column ${idx + 1}`] = val;
+          });
+        }
+        rowData.qr_link = qrLink;
+        worksheet.addRow(rowData);
+      }
+
+      // Style the header row
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE0E0E0" },
+      };
+
+      // Make QR Link column clickable (hyperlink style)
+      worksheet.getColumn("qr_link").eachCell((cell, rowNumber) => {
+        if (
+          rowNumber > 1 &&
+          cell.value &&
+          !String(cell.value).startsWith("[Upload Error")
+        ) {
+          cell.value = {
+            text: cell.value,
+            hyperlink: cell.value,
+          };
+          cell.font = { color: { argb: "FF0066CC" }, underline: true };
+        }
+      });
+
+      // Generate Excel buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      res.set(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.set(
+        "Content-Disposition",
+        `attachment; filename=QR_Links_${timestamp}.xlsx`
+      );
+      res.set("Content-Length", buffer.length);
+      res.send(Buffer.from(buffer));
+    } catch (error) {
+      console.error("Excel with Links Error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 
 // --- Static Serving (SPA) ---
 // Serve static files from the React dist directory

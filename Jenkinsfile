@@ -68,12 +68,24 @@ pipeline {
                      sh """
                      docker stop ${CONTAINER_NAME} || true
                      docker rm ${CONTAINER_NAME} || true
-                     
-                     docker run -d --name ${CONTAINER_NAME} \
-                         --restart unless-stopped \
-                         -p ${HOST_PORT}:3000 \
-                         ${fullImageName}
                      """
+                     
+                     // Deploy with Cloudinary credentials from Jenkins secrets
+                     withCredentials([
+                         string(credentialsId: 'cloudinary-cloud-name', variable: 'CLOUD_NAME'),
+                         string(credentialsId: 'cloudinary-api-key', variable: 'API_KEY'),
+                         string(credentialsId: 'cloudinary-api-secret', variable: 'API_SECRET')
+                     ]) {
+                         sh """
+                         docker run -d --name ${CONTAINER_NAME} \\
+                             --restart unless-stopped \\
+                             -p ${HOST_PORT}:3000 \\
+                             -e CLOUDINARY_CLOUD_NAME=\$CLOUD_NAME \\
+                             -e CLOUDINARY_API_KEY=\$API_KEY \\
+                             -e CLOUDINARY_API_SECRET=\$API_SECRET \\
+                             ${fullImageName}
+                         """
+                     }
                 }
             }
         }

@@ -52,7 +52,7 @@ const Generator: React.FC = () => {
 
   // New Modes
   const [generatorMode, setGeneratorMode] = useState<'qr' | 'barcode'>('qr');
-  const [batchOutputMode, setBatchOutputMode] = useState<'zip' | 'excel'>('zip');
+  const [batchOutputMode, setBatchOutputMode] = useState<'zip' | 'excel' | 'excel-link'>('zip');
 
   // Logic to Generate QR String based on Mode
   const generateQRString = (): string => {
@@ -152,13 +152,46 @@ const Generator: React.FC = () => {
       if (batchOutputMode === 'zip') {
         await processBatchFile(file, qrOptions, generatorMode, (p) => setProgress(p));
         showToast("Tạo ZIP thành công! File đã được tải xuống.");
-      } else {
+      } else if (batchOutputMode === 'excel') {
         await processBatchFileToExcel(file, qrOptions, generatorMode, (p) => setProgress(p));
         showToast("Xuất Excel thành công! File đã được tải xuống.");
+      } else if (batchOutputMode === 'excel-link') {
+        // Call server API for Excel with Cloudinary links
+        setProgress({ total: 0, current: 0, status: 'generating' });
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('options', JSON.stringify({
+          colorDark: qrOptions.colorDark,
+          colorLight: qrOptions.colorLight,
+          header: true
+        }));
+        
+        const response = await fetch('/api/generate/excel-with-links', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Server error');
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `QR_Links_${Date.now()}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+        setProgress({ total: 1, current: 1, status: 'completed' });
+        showToast("Xuất Excel với QR Links thành công!");
       }
     } catch (error) {
       console.error(error);
-      showToast("Có lỗi xảy ra khi xử lý file.");
+      showToast(error instanceof Error ? error.message : "Có lỗi xảy ra khi xử lý file.");
     } finally {
       setIsProcessing(false);
     }
@@ -457,6 +490,12 @@ const Generator: React.FC = () => {
                       className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${batchOutputMode === 'excel' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
                     >
                       Excel (Kèm QR)
+                    </button>
+                    <button
+                      onClick={() => setBatchOutputMode('excel-link')}
+                      className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${batchOutputMode === 'excel-link' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                    >
+                      Excel (kèm QR Link)
                     </button>
                   </div>
                </div>
