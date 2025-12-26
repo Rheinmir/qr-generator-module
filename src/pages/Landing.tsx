@@ -85,8 +85,8 @@ const Landing: React.FC = () => {
                                     POST /api/generate/plain
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 1: Payload</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
                                     <pre className="text-sm text-pink-600 font-mono">
 {`{
@@ -97,6 +97,14 @@ const Landing: React.FC = () => {
   }
 }`}
                                     </pre>
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 2: Test</div>
+                                <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
+{`curl -X POST http://localhost:3000/api/generate/plain \\
+  -H "Content-Type: application/json" \\
+  -d '{ "text": "Hello World", "options": { "width": 300 } }'`}
                                 </div>
                             </div>
                         </div>
@@ -131,8 +139,8 @@ document.body.appendChild(img);`}
                                     POST /api/generate/batch
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 1: Payload</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
                                     <pre className="text-sm text-pink-600 font-mono">
 {`{
@@ -140,9 +148,18 @@ document.body.appendChild(img);`}
       { "text": "QR1", "filename": "1.png" },
       { "text": "QR2", "filename": "2.png" }
   ],
-  "options": { ... }
+  "options": { "width": 300 }
 }`}
                                     </pre>
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 2: Test</div>
+                                <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
+{`curl -X POST http://localhost:3000/api/generate/batch \\
+  -H "Content-Type: application/json" \\
+  -d '{ "items": [{"text": "A", "filename": "a.png"}], "options": {"width": 300} }' \\
+  --output batch.zip`}
                                 </div>
                             </div>
                         </div>
@@ -161,26 +178,26 @@ document.body.appendChild(img);`}
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Header</div>
-                                <div className="p-4 font-mono text-gray-700 text-sm">Content-Type: multipart/form-data</div>
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 1: Prepare File</div>
+                                <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
+                                    <p className="text-sm text-gray-600 mb-2">Create an Excel file (e.g., <code>data.xlsx</code>). The API:</p>
+                                    <ul className="list-disc list-inside text-sm text-gray-600 mb-3 ml-2">
+                                        <li>Combines <b>all columns</b> as content (Key: Value).</li>
+                                        <li>Uses <b>all values</b> as the filename.</li>
+                                    </ul>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
-                                <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
-                                    <p className="text-sm text-gray-600 mb-2">Upload an Excel file. The API automatically:</p>
-                                    <ul className="list-disc list-inside text-sm text-gray-600 mb-3 ml-2">
-                                        <li>Combines <b>all columns</b> (Key: Value) as QR content.</li>
-                                        <li>Uses <b>all values</b> (Val1 - Val2) as the filename.</li>
-                                    </ul>
-                                    <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 2: Test</div>
+                                <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
 {`curl -X POST -F "file=@data.xlsx" \\
      -F 'options={"width":300, "header": true}' \\
      http://localhost:3000/api/generate/excel --output qrcodes.zip
 
-# "header": true  => Force Key: Value mode (Table)
-# "header": false => Force Value-only mode (Raw, Row 1 = Data)
-# (omitted)       => Auto-detect (Smart Mode)`}
-                                    </div>
+# Note on "header" option:
+# true  => Force Key: Value mode
+# false => Force Value-only mode
+# (omitted) => Auto-detect`}
                                 </div>
                             </div>
                         </div>
@@ -199,11 +216,7 @@ document.body.appendChild(img);`}
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Header</div>
-                                <div className="p-4 font-mono text-gray-700 text-sm">Content-Type: application/json</div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Body</div>
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 1: Payload</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
                                     <p className="text-sm text-gray-600 mb-3">Generate standard VietQR code for bank transfer.</p>
                                     
@@ -247,8 +260,23 @@ document.body.appendChild(img);`}
                                         </table>
                                     </div>
                                     
-                                    <h4 className="font-semibold text-sm mb-2 text-gray-700">Example (cURL):</h4>
-                                    <div className="bg-gray-800 text-gray-200 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                                    <h4 className="font-semibold text-sm mb-2 text-gray-700">Example Payload:</h4>
+                                    <div className="bg-white border rounded-lg p-3 font-mono text-xs text-pink-600 overflow-x-auto">
+{`{
+  "bankBin": "970422",
+  "accountNumber": "123456789",
+  "amount": "50000",
+  "content": "Tra tien an trua",
+  "options": {
+    "width": 300
+  }
+}`}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 2: Test</div>
+                                <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
 {`curl -X POST http://localhost:3000/api/generate/payment \\
      -H "Content-Type: application/json" \\
      -d '{
@@ -258,7 +286,6 @@ document.body.appendChild(img);`}
        "content": "Tra tien an trua",
        "options": {"width": 300}
      }'`}
-                                    </div>
                                 </div>
                             </div>
                         </div>
