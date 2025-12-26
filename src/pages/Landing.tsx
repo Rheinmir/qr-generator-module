@@ -178,26 +178,39 @@ document.body.appendChild(img);`}
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x border-b">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 1: Prepare File</div>
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 1: Excel File</div>
                                 <div className="p-4 bg-[#f8f9fa] overflow-x-auto">
-                                    <p className="text-sm text-gray-600 mb-2">Create an Excel file (e.g., <code>data.xlsx</code>). The API:</p>
-                                    <ul className="list-disc list-inside text-sm text-gray-600 mb-3 ml-2">
-                                        <li>Combines <b>all columns</b> as content (Key: Value).</li>
-                                        <li>Uses <b>all values</b> as the filename.</li>
-                                    </ul>
+                                    <p className="text-sm text-gray-600 mb-3">Create an Excel file with this structure:</p>
+                                    
+                                    <div className="bg-white border rounded-lg overflow-hidden mb-3">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-gray-100 border-b">
+                                                <tr>
+                                                    <th className="p-2 border-r font-medium text-gray-700">Name (Header)</th>
+                                                    <th className="p-2 border-r font-medium text-gray-700">ID (Header)</th>
+                                                    <th className="p-2 font-medium text-gray-700">Date (Header)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td className="p-2 border-r text-gray-600">Nguyen Van A</td>
+                                                    <td className="p-2 border-r text-gray-600">NV001</td>
+                                                    <td className="p-2 text-gray-600">2024-01-01</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-xs text-gray-500 italic">
+                                        * The API will generate a QR containing: "Name: Nguyen Van A, ID: NV001, Date: 2024-01-01"
+                                    </p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] divide-y md:divide-y-0 md:divide-x">
-                                <div className="p-4 bg-gray-50 font-semibold text-gray-600">Step 2: Test</div>
+                                <div className="p-4 bg-gray-50 font-semibold text-gray-600 flex items-center">Step 2: Test</div>
                                 <div className="p-4 bg-gray-800 text-gray-200 font-mono text-xs overflow-x-auto">
 {`curl -X POST -F "file=@data.xlsx" \\
-     -F 'options={"width":300, "header": true}' \\
-     http://localhost:3000/api/generate/excel --output qrcodes.zip
-
-# Note on "header" option:
-# true  => Force Key: Value mode
-# false => Force Value-only mode
-# (omitted) => Auto-detect`}
+     http://localhost:3000/api/generate/excel \\
+     --output qrcodes.zip`}
                                 </div>
                             </div>
                         </div>
