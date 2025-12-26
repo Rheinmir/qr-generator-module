@@ -206,11 +206,36 @@ const Generator: React.FC = () => {
         <div className="lg:col-span-3 space-y-6 relative">
           
 
-          {/* New Header Actions */}
-          <div className="flex justify-end mb-4">
+          {/* Header Actions & Mobile Mode Switcher */}
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-center mb-4 gap-3">
+              
+              {/* Mobile/Tablet Mode Switcher (< xl) */}
+              <div className="flex xl:hidden bg-gray-100 p-1 rounded-lg">
+                 <button
+                   onClick={() => {
+                       setGeneratorMode('qr');
+                       setManualMode('structured');
+                   }}
+                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${generatorMode === 'qr' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                 >
+                   QR Code
+                 </button>
+                 <button
+                   onClick={() => {
+                       setGeneratorMode('barcode');
+                       setManualMode('plaintext');
+                   }}
+                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${generatorMode === 'barcode' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                 >
+                   Barcode
+                 </button>
+              </div>
+
+              <div className="flex-1"></div>
+
               <button 
                   onClick={() => window.location.href = '/docs'}
-                  className="bg-white hover:bg-gray-50 text-[#1B3664] border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm"
+                  className="bg-white hover:bg-gray-50 text-[#1B3664] border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm w-full sm:w-auto justify-center"
               >
                   <Book className="w-3.5 h-3.5 text-[#5BD1C6]" />
                   <span>API Integration Guide</span>
@@ -268,7 +293,7 @@ const Generator: React.FC = () => {
             <div className="mac-card p-6 shadow-sm flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
               {/* Advanced Type Switcher */}
-              <div className="grid grid-cols-4 gap-2 mb-2 pb-2 border-b border-gray-100">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 pb-2 border-b border-gray-100">
                   {generatorMode === 'qr' && (
                   <button onClick={() => setManualMode('structured')} className={`flex flex-col items-center p-2 rounded-lg transition-all ${manualMode === 'structured' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-500'}`} title="Cấu trúc">
                       <AlignLeft className="w-5 h-5 mb-1" />
@@ -478,7 +503,7 @@ const Generator: React.FC = () => {
                   <span className="text-xs font-bold uppercase tracking-widest text-[#86868b]">Tạo hàng loạt (Batch)</span>
                   
                   {/* Output Mode Toggle */}
-                  <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                  <div className="flex flex-col sm:flex-row bg-gray-100 p-0.5 rounded-lg gap-1 sm:gap-0">
                     <button
                       onClick={() => setBatchOutputMode('zip')}
                       className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${batchOutputMode === 'zip' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
